@@ -4,1175 +4,148 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lisossomos 🧬 - Gestão Financeira Inteligente (Sincronizado)</title>
-    <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg-body: #f8fafc;
-            --bg-card: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --primary: #0284c7;
-            --primary-light: #e0f2fe;
-            --success: #10b981;
-            --success-light: #ecfdf5;
-            --danger: #ef4444;
-            --danger-light: #fef2f2;
-            --warning: #f59e0b;
-            --warning-light: #fffbeb;
-            --border: #e2e8f0;
-            --radius: 12px;
+            --bg-body: #f8fafc; --bg-card: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+            --primary: #0284c7; --primary-light: #e0f2fe; --success: #10b981; --success-light: #ecfdf5;
+            --danger: #ef4444; --danger-light: #fef2f2; --warning: #f59e0b; --warning-light: #fffbeb;
+            --border: #e2e8f0; --radius: 12px;
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
-
-        /* Menu Lateral */
-        aside {
-            width: 270px;
-            background-color: var(--bg-card);
-            border-right: 1px solid var(--border);
-            padding: 24px 16px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: fixed;
-            height: 100vh;
-            top: 0; left: 0; z-index: 10;
-        }
-
-        .brand {
-            display: flex; align-items: center; gap: 12px;
-            font-size: 1.25rem; font-weight: 800; color: var(--primary);
-            padding: 0 12px 20px 12px; border-bottom: 1px solid var(--border);
-        }
-
-        .nav-menu { list-style: none; margin-top: 16px; display: flex; flex-direction: column; gap: 6px; max-height: calc(100vh - 200px); overflow-y: auto; }
-        .nav-item button {
-            width: 100%; background: none; border: none; padding: 10px 14px;
-            border-radius: var(--radius); color: var(--text-muted); font-size: 0.88rem;
-            font-weight: 600; display: flex; align-items: center; gap: 10px;
-            cursor: pointer; transition: all 0.2s ease; text-align: left;
-        }
+        aside { width: 270px; background-color: var(--bg-card); border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; justify-content: space-between; position: fixed; height: 100vh; top: 0; left: 0; z-index: 10; }
+        .brand { display: flex; align-items: center; gap: 12px; font-size: 1.25rem; font-weight: 800; color: var(--primary); padding: 0 12px 20px 12px; border-bottom: 1px solid var(--border); }
+        .nav-menu { list-style: none; margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+        .nav-item button { width: 100%; background: none; border: none; padding: 10px 14px; border-radius: var(--radius); color: var(--text-muted); font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 10px; cursor: pointer; text-align: left; }
         .nav-item button:hover, .nav-item button.active { background-color: var(--primary-light); color: var(--primary); }
-
-        .backup-section { padding-top: 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-
-        /* Áreas Principais */
         main { margin-left: 270px; flex: 1; padding: 32px; max-width: 1300px; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
-        .page-title h1 { font-size: 1.6rem; font-weight: 700; }
-        .page-title p { color: var(--text-muted); font-size: 0.9rem; }
-        .controls-group { display: flex; align-items: center; gap: 12px; }
-
-        .filter-select, .date-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); font-weight: 500; outline: none; }
-        .btn-privacy { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-muted); }
-
-        .view-section { display: none !important; }
-        .view-section.active { display: flex !important; flex-direction: column; gap: 24px; }
-
-        /* Cards & Grids */
-        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
-        .metric-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .metric-card .title { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-        .metric-card .amount { font-size: 1.6rem; font-weight: 700; }
-        .amount.inflows { color: var(--success); }
-        .amount.outflows { color: var(--danger); }
-        .amount.balance { color: var(--primary); }
-
-        .card-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
-        .card-panel h2 { font-size: 1.1rem; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-        .dashboard-columns { display: grid; grid-template-columns: 3fr 2fr; gap: 24px; }
-
-        @media (max-width: 1024px) {
-            .dashboard-columns { grid-template-columns: 1fr; }
-            aside { width: 220px; }
-            main { margin-left: 220px; }
-        }
-
-        /* Tabelas & Formulários */
-        .table-container { overflow-x: auto; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .card-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
         th, td { padding: 12px; border-bottom: 1px solid var(--border); }
-        th { color: var(--text-muted); font-weight: 600; background-color: #fafafa; }
-
-        .tag-status-pago { background-color: var(--success-light); color: var(--success); font-size:0.75rem; padding: 2px 6px; border-radius:4px; font-weight:700;}
-        .tag-status-pendente { background-color: var(--warning-light); color: var(--warning); font-size:0.75rem; padding: 2px 6px; border-radius:4px; font-weight:700;}
-
+        th { color: var(--text-muted); background-color: #fafafa; }
+        .btn-primary { background-color: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 16px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
-        .form-group input, .form-group select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 0.9rem; }
-
-        /* Botões */
-        .btn-primary { background-color: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-primary:hover { background-color: #02699d; }
-        .btn-filter { background: var(--bg-body); border: 1px solid var(--border); padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; }
-        .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .btn-danger-sm { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; }
-        .btn-outline { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-
-        .status-ok { color: var(--success); font-weight: 700; }
-        .cat-clickable { color: var(--primary); cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-        .cat-clickable:hover { color: #02699d; }
-
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15, 23, 42, 0.4); display: none; justify-content: center; align-items: center; z-index: 100;
-        }
-        .modal-overlay.active { display: flex !important; }
-        
-        .code-box {
-            width: 100%; height: 200px; padding: 12px; font-family: monospace; font-size: 0.8rem;
-            border: 1px solid var(--border); border-radius: 8px; background: var(--bg-body);
-            outline: none; cursor: text; user-select: text; resize: vertical;
-        }
+        .form-group input, .form-group select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; }
+        .view-section { display: none !important; }
+        .view-section.active { display: flex !important; flex-direction: column; gap: 24px; }
     </style>
 </head>
 <body>
-
-    <!-- MENU LATERAL -->
     <aside>
         <div>
-            <div class="brand">
-                <span>🧬</span>
-                <span>Lisossomos</span>
-            </div>
+            <div class="brand"><span>🧬</span><span>Lisossomos</span></div>
             <ul class="nav-menu">
                 <li class="nav-item"><button class="active" onclick="switchView('dashboard', this)">📊 Dashboard</button></li>
                 <li class="nav-item"><button onclick="switchView('transactions', this)">💸 Lançamentos</button></li>
-                <li class="nav-item"><button onclick="switchView('fixedbills', this)">🔔 Contas Fixas</button></li>
-                <li class="nav-item"><button onclick="switchView('cards', this)">💳 Cartões de Crédito</button></li>
-                <li class="nav-item"><button onclick="switchView('projection', this)">📈 Projeção 6 Meses</button></li>
-                <li class="nav-item"><button onclick="switchView('transfers', this)">🔄 Transferências</button></li>
-                <li class="nav-item"><button onclick="switchView('reconciliation', this)">⚖️ Conciliação Bancária</button></li>
-                <li class="nav-item"><button onclick="switchView('goals', this)">🎯 Metas por Categoria</button></li>
-                <li class="nav-item"><button onclick="switchView('accounts', this)">🏦 Contas & Chaves Pix</button></li>
-                <li class="nav-item"><button onclick="switchView('vaults', this)">🐷 Caixinhas & Objetivos</button></li>
-                <li class="nav-item"><button onclick="switchView('settings', this)">⚙️ Configurações & Código</button></li>
+                <li class="nav-item"><button onclick="switchView('settings', this)">⚙️ Configurações</button></li>
             </ul>
         </div>
-
-        <div class="backup-section">
-            <button class="btn-outline" onclick="exportData()">📥 Exportar Backup (JSON)</button>
-            <button class="btn-outline" onclick="document.getElementById('importFile').click()">📤 Importar Backup</button>
-            <input type="file" id="importFile" style="display:none" onchange="importData(event)">
-        </div>
     </aside>
-
-    <!-- CONTEÚDO PRINCIPAL -->
     <main>
         <div class="top-bar">
-            <div class="page-title">
-                <h1 id="pageTitle">Visão Geral</h1>
-                <p id="pageSubtitle">Acompanhamento consolidado do orçamento (sem ficar liso!). Sincronizado na Nuvem ☁️</p>
-            </div>
-            <div class="controls-group">
-                <select id="viewMode" class="filter-select" onchange="updateDashboard()">
-                    <option value="month">Mensal</option>
-                    <option value="day">Diário</option>
-                    <option value="year">Anual</option>
-                </select>
-                <input type="month" id="filterPeriod" class="date-input" onchange="updateDashboard()">
-                <button class="btn-privacy" onclick="togglePrivacy()">
-                    <span id="privacyIcon">👁️</span> <span id="privacyText">Ocultar</span>
-                </button>
-            </div>
+            <h1>Visão Geral - Sincronizado ☁️</h1>
         </div>
-
-        <!-- TELA 1: DASHBOARD -->
         <section id="view-dashboard" class="view-section active">
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <span class="title">Entradas (Receitas)</span>
-                    <span class="amount inflows" id="totalInflows">R$ 0,00</span>
-                </div>
-                <div class="metric-card">
-                    <span class="title">Saídas (Despesas)</span>
-                    <span class="amount outflows" id="totalOutflows">R$ 0,00</span>
-                </div>
-                <div class="metric-card">
-                    <span class="title">Saldo Líquido</span>
-                    <span class="amount balance" id="totalBalance">R$ 0,00</span>
-                </div>
-            </div>
-
-            <div class="dashboard-columns">
-                <div class="card-panel">
-                    <h2>Metas de Gastos por Categoria</h2>
-                    <div id="dashGoalsList" style="display: flex; flex-direction: column; gap: 14px;"></div>
-                </div>
-                <div class="card-panel">
-                    <h2>Distribuição de Despesas</h2>
-                    <div style="position: relative; height: 280px; width: 100%;">
-                        <canvas id="categoryChart"></canvas>
-                    </div>
-                </div>
+            <div class="card-panel">
+                <h2>Saldo Líquido: <span id="totalBalance" style="color:var(--primary)">R$ 0,00</span></h2>
             </div>
         </section>
-
-        <!-- TELA 2: LANÇAMENTOS -->
         <section id="view-transactions" class="view-section">
             <div class="card-panel">
                 <h2>Novo Lançamento</h2>
                 <form id="transactionForm" onsubmit="addTransaction(event)">
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>Descrição</label>
-                            <input type="text" id="txDesc" placeholder="Ex: Supermercado, Salário..." required>
-                        </div>
-                        <div class="form-group">
-                            <label>Valor (R$)</label>
-                            <input type="number" id="txAmount" step="0.01" min="0.01" placeholder="0,00" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Tipo</label>
-                            <select id="txType" required>
-                                <option value="despesa">Despesa (-)</option>
-                                <option value="receita">Receita (+)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Frequência / Parcelas</label>
-                            <select id="txRecurrence" onchange="toggleParcelasInput(this.value)">
-                                <option value="unico">Lançamento Único</option>
-                                <option value="fixo">Fixo Mensal (Recorrente)</option>
-                                <option value="parcelado">Compra Parcelada (x)</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="parcelasGroup" style="display: none;">
-                            <label>Qtd. de Parcelas</label>
-                            <input type="number" id="txInstallments" min="2" max="60" value="2">
-                        </div>
-                        <div class="form-group">
-                            <label>Conta / Cartão</label>
-                            <select id="txAccountSelect" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Categoria</label>
-                            <select id="txCategory" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Data Vencimento/Realização</label>
-                            <input type="date" id="txDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select id="txStatus">
-                                <option value="pago">Pago / Recebido</option>
-                                <option value="pendente">Pendente / A Vencer</option>
-                            </select>
-                        </div>
+                        <div class="form-group"><label>Descrição</label><input type="text" id="txDesc" required></div>
+                        <div class="form-group"><label>Valor (R$)</label><input type="number" id="txAmount" step="0.01" required></div>
+                        <div class="form-group"><label>Tipo</label><select id="txType"><option value="despesa">Despesa</option><option value="receita">Receita</option></select></div>
+                        <div class="form-group"><label>Data</label><input type="date" id="txDate" required></div>
                     </div>
-                    <button type="submit" class="btn-primary">Salvar Lançamento (Sincronizado)</button>
+                    <button type="submit" class="btn-primary">Salvar Lançamento</button>
                 </form>
             </div>
-
             <div class="card-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-                    <h2>Histórico Geral de Lançamentos</h2>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn-filter active" onclick="setTxFilter('todos', this)">Todos</button>
-                        <button type="button" class="btn-filter" onclick="setTxFilter('receita', this)">🟢 Receitas</button>
-                        <button type="button" class="btn-filter" onclick="setTxFilter('despesa', this)">🔴 Despesas</button>
-                        <button type="button" class="btn-filter" onclick="setTxFilter('pendente', this)">⚠️ Pendentes</button>
-                    </div>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Descrição</th>
-                                <th>Conta / Cartão</th>
-                                <th>Categoria</th>
-                                <th>Status</th>
-                                <th>Valor</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactionsTable"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- TELA 3: CONTAS FIXAS -->
-        <section id="view-fixedbills" class="view-section">
-            <div class="card-panel">
-                <h2>Cadastrar Conta Fixa / Recorrente</h2>
-                <form onsubmit="addFixedBill(event)" style="margin-bottom: 16px;">
-                    <div class="form-grid">
-                        <input type="text" id="fbDesc" placeholder="Descrição (ex: Aluguel, Internet)" required>
-                        <input type="number" id="fbAmount" step="0.01" placeholder="Valor Estimado (R$)" required>
-                        <input type="number" id="fbDay" min="1" max="31" placeholder="Dia do Vencimento (ex: 10)" required>
-                        <select id="fbCategory" required></select>
-                    </div>
-                    <button type="submit" class="btn-primary">Salvar Conta Fixa</button>
-                </form>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Dia de Vencimento</th>
-                                <th>Descrição da Conta</th>
-                                <th>Categoria</th>
-                                <th>Valor Estimado</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="fixedBillsTable"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- TELA 4: CARTÕES DE CRÉDITO -->
-        <section id="view-cards" class="view-section">
-            <div class="card-panel">
-                <h2>Cadastrar Cartão de Crédito</h2>
-                <form onsubmit="addCreditCard(event)" style="margin-bottom: 16px;">
-                    <div class="form-grid">
-                        <input type="text" id="cardName" placeholder="Nome do Cartão (ex: Nubank, Inter)" required>
-                        <input type="text" id="cardOwner" placeholder="Titular" required>
-                        <input type="number" id="cardLimit" step="100" placeholder="Limite Total (R$)" required>
-                        <input type="number" id="cardClosingDay" min="1" max="31" placeholder="Dia Fechamento Fatura" required>
-                        <input type="number" id="cardDueDay" min="1" max="31" placeholder="Dia Vencimento Fatura" required>
-                    </div>
-                    <button type="submit" class="btn-primary">Salvar Cartão</button>
-                </form>
-
-                <div id="creditCardsGrid" class="metrics-grid"></div>
-            </div>
-        </section>
-
-        <!-- TELA 5: PROJEÇÃO 6 MESES -->
-        <section id="view-projection" class="view-section">
-            <div class="card-panel">
-                <h2>Projeção do Fluxo de Caixa (Próximos 6 Meses)</h2>
-                <div style="position: relative; height: 350px; width: 100%;">
-                    <canvas id="projectionChart"></canvas>
-                </div>
-            </div>
-        </section>
-
-        <!-- TELA 6: TRANSFERÊNCIAS -->
-        <section id="view-transfers" class="view-section">
-            <div class="card-panel">
-                <h2>Nova Transferência Entre Contas</h2>
-                <form onsubmit="addTransfer(event)">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Conta de Origem (Sai)</label>
-                            <select id="tfFrom" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Conta de Destino (Entra)</label>
-                            <select id="tfTo" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Valor (R$)</label>
-                            <input type="number" id="tfAmount" step="0.01" min="0.01" placeholder="0,00" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Data</label>
-                            <input type="date" id="tfDate" required>
-                        </div>
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label>Observação/Motivo</label>
-                            <input type="text" id="tfDesc" placeholder="Ex: Reserva de emergência...">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-primary">Realizar Transferência</button>
-                </form>
-            </div>
-
-            <div class="card-panel">
-                <h2>Histórico de Transferências Inter-contas</h2>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Origem</th>
-                                <th>Destino</th>
-                                <th>Descrição</th>
-                                <th>Valor</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transfersTable"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- TELA 7: CONCILIAÇÃO BANCÁRIA -->
-        <section id="view-reconciliation" class="view-section">
-            <div class="card-panel">
-                <h2>Conciliação e Saldo Calculado de Cada Conta</h2>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Conta / Banco</th>
-                                <th>Data Inicial</th>
-                                <th>Saldo Inicial (R$)</th>
-                                <th>Entradas / Saídas</th>
-                                <th>Saldo Calculado</th>
-                                <th>Saldo Real no Extrato (R$)</th>
-                                <th>Status</th>
-                                <th>Extrato & Datas</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reconciliationTable"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- TELA 8: METAS POR CATEGORIA -->
-        <section id="view-goals" class="view-section">
-            <div class="card-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-                    <h2>Gerenciar Metas de Gastos / Tetos</h2>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn-filter active" id="btnGoalMonth" onclick="setGoalViewMode('month', this)">Visão Mensal</button>
-                        <button type="button" class="btn-filter" id="btnGoalYear" onclick="setGoalViewMode('year', this)">Visão Anual Teto</button>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr id="goalsHeader">
-                                <th>Categoria</th>
-                                <th>Meta Mês Atual (R$)</th>
-                                <th>Gasto Realizado</th>
-                                <th>Status</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="goalsTable"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card-panel">
-                <h2>Adicionar Nova Categoria</h2>
-                <form onsubmit="addCategory(event)" style="display: flex; gap: 12px; max-width: 450px;">
-                    <input type="text" id="newCatName" placeholder="Nome da Categoria" style="flex:1; padding: 10px; border: 1px solid var(--border); border-radius:8px;" required>
-                    <button type="submit" class="btn-primary">Criar Categoria</button>
-                </form>
-            </div>
-        </section>
-
-        <!-- TELA 9: CONTAS & CHAVES PIX -->
-        <section id="view-accounts" class="view-section">
-            <div class="card-panel">
-                <h2>Cadastrar Contas Bancárias</h2>
-                <form onsubmit="addBankAccount(event)" style="margin-bottom: 16px;">
-                    <div class="form-grid">
-                        <input type="text" id="accBank" placeholder="Nome do Banco" required>
-                        <input type="text" id="accOwner" placeholder="Titular" required>
-                        <input type="number" id="accInitialBalance" step="0.01" placeholder="Saldo Inicial (R$)" required>
-                        <input type="date" id="accInitialDate" required>
-                        <input type="text" id="accPurpose" placeholder="Finalidade" required>
-                    </div>
-                    <button type="submit" class="btn-primary">Salvar Conta</button>
-                </form>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Banco/Conta</th><th>Titular</th><th>Data Inicial</th><th>Saldo Inicial</th><th>Finalidade</th><th>Ação</th></tr></thead>
-                        <tbody id="accountsTable"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card-panel">
-                <h2>Chaves Pix Cadastradas</h2>
-                <form onsubmit="addPix(event)" style="margin-bottom: 16px;">
-                    <div class="form-grid">
-                        <input type="text" id="pixOwner" placeholder="Titular" required>
-                        <input type="text" id="pixBank" placeholder="Banco" required>
-                        <input type="text" id="pixKey" placeholder="Chave Pix" required>
-                    </div>
-                    <button type="submit" class="btn-primary">Adicionar Pix</button>
-                </form>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Titular</th><th>Banco</th><th>Chave</th><th>Ação</th></tr></thead>
-                        <tbody id="pixTable"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- TELA 10: CAIXINHAS & OBJETIVOS -->
-        <section id="view-vaults" class="view-section">
-            <div class="card-panel">
-                <h2>Suas Caixinhas & Objetivos</h2>
-                <form onsubmit="addVault(event)" style="margin-bottom: 20px;">
-                    <div class="form-grid">
-                        <input type="text" id="vaultName" placeholder="Nome da Caixinha" required>
-                        <input type="number" id="vaultCurrent" step="0.01" placeholder="Guardado Atual (R$)" required>
-                        <input type="number" id="vaultGoal" step="0.01" placeholder="Meta Final (R$)" required>
-                        <input type="number" id="vaultMonthlyDeposit" step="10" placeholder="Aporte Mensal (R$)" required>
-                    </div>
-                    <button type="submit" class="btn-primary">Criar Caixinha</button>
-                </form>
-                <div id="vaultsGrid" class="metrics-grid"></div>
-            </div>
-        </section>
-
-        <!-- TELA 11: CONFIGURAÇÕES & CÓDIGO FONTE -->
-        <section id="view-settings" class="view-section">
-            <div class="card-panel">
-                <h2>⚙️ Gestão de Dados & Backup</h2>
-                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <button class="btn-primary" onclick="exportData()">📥 Exportar Backup (JSON)</button>
-                    <button class="btn-outline" onclick="document.getElementById('importFileSettings').click()">📤 Importar Backup</button>
-                    <input type="file" id="importFileSettings" style="display:none" onchange="importData(event)">
-                </div>
-            </div>
-
-            <div class="card-panel">
-                <h2>💻 Código Fonte do Site</h2>
-                <button class="btn-primary" onclick="copySourceCode()" style="margin-bottom: 12px;">📋 Copiar Código Fonte Completo</button>
-                <textarea id="sourceCodeBox" readonly class="code-box" onclick="this.select()"></textarea>
-            </div>
-        </section>
-    </main>
-
-    <!-- MODAL 1: DETALHAMENTO DE CATEGORIA -->
-    <div id="catModalOverlay" class="modal-overlay">
-        <div class="modal-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 id="modalCatTitle" style="font-size: 1.3rem; color: var(--primary);">Categoria</h2>
-                <button onclick="closeModal('catModalOverlay')" class="btn-outline" style="padding: 4px 10px;">✕ Fechar</button>
-            </div>
-            <div class="metrics-grid" style="grid-template-columns: 1fr 1fr;">
-                <div class="metric-card">
-                    <span class="title">Gasto Mês Atual</span>
-                    <span id="modalMonthSpent" class="amount outflows">R$ 0,00</span>
-                    <span id="modalMonthGoalText" style="font-size: 0.8rem; color: var(--text-muted);">Meta: R$ 0,00</span>
-                </div>
-                <div class="metric-card">
-                    <span class="title">Gasto Acumulado no Ano</span>
-                    <span id="modalYearSpent" class="amount outflows">R$ 0,00</span>
-                    <span id="modalYearGoalText" style="font-size: 0.8rem; color: var(--text-muted);">Teto Anual: R$ 0,00</span>
-                </div>
-            </div>
-            <div id="modalAdviceBox" style="background: var(--primary-light); border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; font-size: 0.85rem; color: #1e40af;"></div>
-        </div>
-    </div>
-
-    <!-- MODAL 2: EXTRATO COMPLETO -->
-    <div id="accStatementModal" class="modal-overlay">
-        <div class="modal-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 id="modalAccTitle" style="font-size: 1.3rem; color: var(--primary);">Extrato da Conta</h2>
-                <button onclick="closeModal('accStatementModal')" class="btn-outline" style="padding: 4px 10px;">✕ Fechar</button>
-            </div>
-            <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                <h2>Histórico</h2>
                 <table>
-                    <thead>
-                        <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th></tr>
-                    </thead>
-                    <tbody id="modalAccountStatementTable"></tbody>
+                    <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th></tr></thead>
+                    <tbody id="transactionsTable"></tbody>
                 </table>
             </div>
-        </div>
-    </div>
-
+        </section>
+        <section id="view-settings" class="view-section">
+            <div class="card-panel"><h2>Configurações</h2><p>Conectado ao Supabase com sucesso.</p></div>
+        </section>
+    </main>
     <script>
-        // ==========================================
-        // CONFIGURAÇÃO DO SUPABASE
-        // ==========================================
-        const SUPABASE_URL = 'https://ehxvnbdcwinnfqxstwxz.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_MUOFOFH-MazsELbh7J5zw_SJA80'; 
-        
-        let supabaseClient = null;
-        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase) {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
+        const SUPABASE_URL = 'https://ehxvnbdcwinnfqxstwxz.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_MUOFOFH-MazsELbh7J5zw_SJA80';
+        let supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-        const DEFAULT_CATEGORIES = ["Mercado", "Moradia", "Lazer", "Transporte", "Saúde", "Reserva/Investimentos", "Salário", "Alimentação na rua", "Salários Lucas"];
-        
         let state = {
-            transactions: [
-                {id: 1793402848629, desc: "Janta fora", amount: 30, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-30", status: "pago", recurrence: "unico"},
-                {id: 1793453932205, desc: "café da manhã", amount: 20, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-31", status: "pago", recurrence: "unico"},
-                {id: 1793463690363, desc: "Salario", amount: 11, type: "receita", account: "Banco do Brasil", category: "Salários Lucas", date: "2026-10-31", status: "pago", recurrence: "unico"}
-            ],
-            transfers: JSON.parse(localStorage.getItem('fin_transfers') || '[]'),
-            categories: JSON.parse(localStorage.getItem('fin_cats') || JSON.stringify(DEFAULT_CATEGORIES)),
-            fixedBills: JSON.parse(localStorage.getItem('fin_fixed_bills') || '[]'),
-            goals: JSON.parse(localStorage.getItem('fin_goals') || '{"2026-10":{"Mercado":1000,"Moradia":150,"Lazer":500,"Transporte":300,"Saúde":600,"Reserva/Investimentos":200,"Alimentação na rua":1000,"Salários Lucas":3000,"Salário Aléxia":3000}}'),
-            annualGoals: JSON.parse(localStorage.getItem('fin_annual_goals') || '{}'),
-            pixList: JSON.parse(localStorage.getItem('fin_pix') || '[{"id":1793399798757,"owner":"Lucas Manerich","bank":"Banco do Brasil","key":"05208500175"},{"id":1793399815033,"owner":"Lucas Manerich","bank":"Nubank","key":"61981662269"},{"id":1793399828534,"owner":"Alexia Renata","bank":"C6","key":"61985039373"}]'),
-            accountsList: JSON.parse(localStorage.getItem('fin_accs') || '[{"id":1,"bank":"Banco do Brasil","owner":"Lucas","initialBalance":50,"initialDate":"2026-10-30","purpose":"Gastos gerais"},{"id":2,"bank":"Nubank","owner":"Lucas","initialBalance":0.94,"initialDate":"2026-10-30","purpose":"Pouco usada"},{"id":3,"bank":"C6","owner":"Aléxia","initialBalance":13.21,"initialDate":"2026-10-30","purpose":"Gastos gerais"}]'),
-            creditCards: JSON.parse(localStorage.getItem('fin_cards') || '[{"id":101,"name":"C6 Black","owner":"Aléxia","limit":15000,"closingDay":15,"dueDay":22}]'),
-            bankReconciled: JSON.parse(localStorage.getItem('fin_rec') || '{}'),
-            vaultsList: JSON.parse(localStorage.getItem('fin_vaults') || '[{"id":1793402664086,"name":"Reserva de investimento","current":0,"goal":10000,"monthlyDeposit":200,"history":[]}]'),
-            hideValues: false
+            transactions: JSON.parse(localStorage.getItem('fin_txs') || '[]')
         };
 
-        let currentTxTypeFilter = 'todos';
-        let currentGoalTableMode = 'month';
-        let chartInstance = null;
-        let projectionChartInstance = null;
-
         document.addEventListener("DOMContentLoaded", async () => {
-            const now = new Date();
-            document.getElementById('filterPeriod').value = now.toISOString().slice(0, 7);
-            const todayStr = now.toISOString().slice(0, 10);
-            document.getElementById('txDate').value = todayStr;
-            document.getElementById('tfDate').value = todayStr;
-            document.getElementById('accInitialDate').value = todayStr;
-
-            // Busca os dados da nuvem do Supabase
+            document.getElementById('txDate').value = new Date().toISOString().slice(0, 10);
             if (supabaseClient) {
-                await fetchTransactionsFromSupabase();
-            } else {
-                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || JSON.stringify(state.transactions));
-            }
-
-            populateAccountSelects();
-            populateCategoriesSelects();
-            updateDashboard();
-            renderTransactionsTable();
-            renderFixedBillsTable();
-            loadSourceCodeIntoView();
-        });
-
-        // --- SUPABASE SYNC ---
-        async function fetchTransactionsFromSupabase() {
-            try {
-                const { data, error } = await supabaseClient.from('transactions').select('*');
-                if (!error && data && data.length > 0) {
+                const { data } = await supabaseClient.from('transactions').select('*');
+                if (data && data.length > 0) {
                     state.transactions = data;
+                    localStorage.setItem('fin_txs', JSON.stringify(data));
                 }
-            } catch (err) {
-                console.error("Erro ao buscar do Supabase:", err);
             }
-        }
-
-        async function saveTransactionToSupabase(tx) {
-            if (supabaseClient) {
-                await supabaseClient.from('transactions').upsert([tx]);
-            }
-            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
-        }
-
-        async function deleteTransactionFromSupabase(id) {
-            if (supabaseClient) {
-                await supabaseClient.from('transactions').delete().eq('id', id);
-            }
-            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
-        }
-
-        function switchView(viewName, btnElement) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item button').forEach(el => el.classList.remove('active'));
-            document.getElementById(`view-${viewName}`).classList.add('active');
-            if (btnElement) btnElement.classList.add('active');
-
-            if (viewName === 'dashboard') updateDashboard();
-            if (viewName === 'transactions') renderTransactionsTable();
-            if (viewName === 'fixedbills') renderFixedBillsTable();
-            if (viewName === 'cards') renderCreditCards();
-            if (viewName === 'projection') renderProjectionChart();
-            if (viewName === 'transfers') renderTransfersTable();
-            if (viewName === 'reconciliation') renderReconciliationTable();
-            if (viewName === 'goals') renderGoalsTable();
-            if (viewName === 'accounts') renderAccountsAndPix();
-            if (viewName === 'vaults') renderVaults();
-            if (viewName === 'settings') loadSourceCodeIntoView();
-        }
-
-        function togglePrivacy() {
-            state.hideValues = !state.hideValues;
-            document.getElementById('privacyIcon').innerText = state.hideValues ? '🙈' : '👁️';
-            document.getElementById('privacyText').innerText = state.hideValues ? 'Mostrar' : 'Ocultar';
+            renderTable();
             updateDashboard();
-            renderTransactionsTable();
-        }
-
-        function formatCurrency(val) {
-            if (state.hideValues) return 'R$ ****';
-            return (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        function saveLocalState() {
-            localStorage.setItem('fin_transfers', JSON.stringify(state.transfers));
-            localStorage.setItem('fin_cats', JSON.stringify(state.categories));
-            localStorage.setItem('fin_fixed_bills', JSON.stringify(state.fixedBills));
-            localStorage.setItem('fin_goals', JSON.stringify(state.goals));
-            localStorage.setItem('fin_annual_goals', JSON.stringify(state.annualGoals));
-            localStorage.setItem('fin_pix', JSON.stringify(state.pixList));
-            localStorage.setItem('fin_accs', JSON.stringify(state.accountsList));
-            localStorage.setItem('fin_cards', JSON.stringify(state.creditCards));
-            localStorage.setItem('fin_rec', JSON.stringify(state.bankReconciled));
-            localStorage.setItem('fin_vaults', JSON.stringify(state.vaultsList));
-        }
-
-        function populateAccountSelects() {
-            const txAcc = document.getElementById('txAccountSelect');
-            const tfFrom = document.getElementById('tfFrom');
-            const tfTo = document.getElementById('tfTo');
-            [txAcc, tfFrom, tfTo].forEach(select => {
-                if (!select) return;
-                select.innerHTML = '';
-                state.accountsList.forEach(a => {
-                    select.insertAdjacentHTML('beforeend', `<option value="${a.bank}">${a.bank} (${a.owner})</option>`);
-                });
-                if (select === txAcc) {
-                    state.creditCards.forEach(c => {
-                        select.insertAdjacentHTML('beforeend', `<option value="Cartão: ${c.name}">💳 Cartão: ${c.name}</option>`);
-                    });
-                }
-            });
-        }
-
-        function populateCategoriesSelects() {
-            const sel = document.getElementById('txCategory');
-            const fbSel = document.getElementById('fbCategory');
-            [sel, fbSel].forEach(select => {
-                if (!select) return;
-                select.innerHTML = '';
-                state.categories.forEach(c => select.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`));
-            });
-        }
-
-        function toggleParcelasInput(val) {
-            document.getElementById('parcelasGroup').style.display = (val === 'parcelado') ? 'flex' : 'none';
-        }
-
-        function setTxFilter(type, btn) {
-            currentTxTypeFilter = type;
-            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-            if (btn) btn.classList.add('active');
-            renderTransactionsTable();
-        }
+        });
 
         async function addTransaction(e) {
             e.preventDefault();
-            const desc = document.getElementById('txDesc').value;
-            const amount = parseFloat(document.getElementById('txAmount').value);
-            const type = document.getElementById('txType').value;
-            const recurrence = document.getElementById('txRecurrence').value;
-            const account = document.getElementById('txAccountSelect').value;
-            const category = document.getElementById('txCategory').value;
-            const startDate = document.getElementById('txDate').value;
-            const status = document.getElementById('txStatus').value;
-
-            if (recurrence === 'parcelado') {
-                const installments = parseInt(document.getElementById('txInstallments').value) || 2;
-                const parcelAmount = amount / installments;
-                let dateObj = new Date(startDate + 'T00:00:00');
-
-                for (let i = 1; i <= installments; i++) {
-                    const iterDate = new Date(dateObj);
-                    iterDate.setMonth(dateObj.getMonth() + (i - 1));
-                    const newTx = {
-                        id: Date.now() + i,
-                        desc: `${desc} (${i}/${installments})`,
-                        amount: parcelAmount,
-                        type, account, category,
-                        date: iterDate.toISOString().slice(0, 10),
-                        status: i === 1 ? status : 'pendente',
-                        recurrence: 'parcelado'
-                    };
-                    state.transactions.push(newTx);
-                    await saveTransactionToSupabase(newTx);
-                }
-            } else {
-                const newTx = {
-                    id: Date.now(),
-                    desc, amount, type, account, category,
-                    date: startDate,
-                    status,
-                    recurrence
-                };
-                state.transactions.push(newTx);
-                await saveTransactionToSupabase(newTx);
+            const tx = {
+                id: Date.now(),
+                "desc": document.getElementById('txDesc').value,
+                amount: parseFloat(document.getElementById('txAmount').value),
+                type: document.getElementById('txType').value,
+                date: document.getElementById('txDate').value,
+                account: "Banco do Brasil",
+                category: "Geral",
+                status: "pago",
+                recurrence: "unico"
+            };
+            state.transactions.push(tx);
+            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
+            if (supabaseClient) {
+                await supabaseClient.from('transactions').upsert([tx]);
             }
-
             document.getElementById('transactionForm').reset();
             document.getElementById('txDate').value = new Date().toISOString().slice(0, 10);
-            renderTransactionsTable();
+            renderTable();
             updateDashboard();
-            alert('Lançamento salvo e sincronizado na nuvem! ✨');
+            alert('Salvo com sucesso!');
         }
 
-        async function toggleStatusTx(id) {
-            const tx = state.transactions.find(t => t.id === id);
-            if (tx) {
-                tx.status = tx.status === 'pago' ? 'pendente' : 'pago';
-                await saveTransactionToSupabase(tx);
-                renderTransactionsTable();
-                updateDashboard();
-            }
-        }
-
-        async function deleteTx(id) {
-            state.transactions = state.transactions.filter(x => x.id !== id);
-            await deleteTransactionFromSupabase(id);
-            renderTransactionsTable();
-            updateDashboard();
-        }
-
-        function renderTransactionsTable() {
+        function renderTable() {
             const tbody = document.getElementById('transactionsTable');
             if (!tbody) return;
             tbody.innerHTML = '';
-            
-            let filtered = [...state.transactions];
-            if (currentTxTypeFilter === 'receita') filtered = filtered.filter(t => t.type === 'receita');
-            if (currentTxTypeFilter === 'despesa') filtered = filtered.filter(t => t.type === 'despesa');
-            if (currentTxTypeFilter === 'pendente') filtered = filtered.filter(t => t.status === 'pendente');
-
-            filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Nenhum lançamento encontrado.</td></tr>`;
-                return;
-            }
-
-            filtered.forEach(tx => {
-                const isPaid = tx.status === 'pago' || !tx.status;
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${tx.date ? tx.date.split('-').reverse().join('/') : '-'}</td>
-                        <td><strong>${tx.desc}</strong></td>
-                        <td>${tx.account || 'Geral'}</td>
-                        <td><span class="cat-clickable" onclick="openCatModal('${tx.category}')">${tx.category}</span></td>
-                        <td>
-                            <button onclick="toggleStatusTx(${tx.id})" class="${isPaid ? 'tag-status-pago' : 'tag-status-pendente'}" style="border:none; cursor:pointer;">
-                                ${isPaid ? '✔ Pago' : '⏳ Pendente'}
-                            </button>
-                        </td>
-                        <td style="font-weight:700; color: ${tx.type === 'receita' ? 'var(--success)' : 'var(--danger)'}">
-                            ${tx.type === 'receita' ? '+' : '-'} ${formatCurrency(tx.amount)}
-                        </td>
-                        <td><button class="btn-danger-sm" onclick="deleteTx(${tx.id})">🗑️</button></td>
-                    </tr>
-                `);
-            });
-        }
-
-        function addFixedBill(e) {
-            e.preventDefault();
-            state.fixedBills.push({
-                id: Date.now(),
-                desc: document.getElementById('fbDesc').value,
-                amount: parseFloat(document.getElementById('fbAmount').value),
-                day: parseInt(document.getElementById('fbDay').value),
-                category: document.getElementById('fbCategory').value
-            });
-            saveLocalState();
-            renderFixedBillsTable();
-            e.target.reset();
-        }
-
-        function renderFixedBillsTable() {
-            const tbody = document.getElementById('fixedBillsTable');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            state.fixedBills.forEach(fb => {
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>Dia <strong>${fb.day}</strong></td>
-                        <td><strong>${fb.desc}</strong></td>
-                        <td>${fb.category}</td>
-                        <td>${formatCurrency(fb.amount)}</td>
-                        <td><button class="btn-danger-sm" onclick="state.fixedBills=state.fixedBills.filter(x=>x.id!=${fb.id});saveLocalState();renderFixedBillsTable();">🗑️</button></td>
-                    </tr>
-                `);
-            });
-        }
-
-        function addCreditCard(e) {
-            e.preventDefault();
-            state.creditCards.push({
-                id: Date.now(),
-                name: document.getElementById('cardName').value,
-                owner: document.getElementById('cardOwner').value,
-                limit: parseFloat(document.getElementById('cardLimit').value),
-                closingDay: parseInt(document.getElementById('cardClosingDay').value),
-                dueDay: parseInt(document.getElementById('cardDueDay').value)
-            });
-            saveLocalState();
-            populateAccountSelects();
-            renderCreditCards();
-            e.target.reset();
-        }
-
-        function renderCreditCards() {
-            const grid = document.getElementById('creditCardsGrid');
-            if (!grid) return;
-            grid.innerHTML = '';
-            state.creditCards.forEach(c => {
-                grid.insertAdjacentHTML('beforeend', `
-                    <div class="card-panel" style="position:relative;">
-                        <button class="btn-danger-sm" style="position:absolute; top:16px; right:16px;" onclick="state.creditCards=state.creditCards.filter(x=>x.id!=${c.id});saveLocalState();renderCreditCards();">🗑️</button>
-                        <span style="font-weight:700; color:var(--text-muted);">💳 ${c.name} (${c.owner})</span>
-                        <span style="font-size:1.4rem; font-weight:700; color:var(--danger);">Limite: ${formatCurrency(c.limit)}</span>
-                    </div>
-                `);
-            });
-        }
-
-        function renderProjectionChart() {
-            const canvas = document.getElementById('projectionChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            if (projectionChartInstance) projectionChartInstance.destroy();
-            projectionChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Mês 1', 'Mês 2', 'Mês 3', 'Mês 4', 'Mês 5', 'Mês 6'],
-                    datasets: [{ label: 'Saldo Projetado', data: [1000, 1200, 1500, 1800, 2000, 2500], backgroundColor: '#0284c7' }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function addTransfer(e) {
-            e.preventDefault();
-            state.transfers.push({
-                id: Date.now(),
-                from: document.getElementById('tfFrom').value,
-                to: document.getElementById('tfTo').value,
-                amount: parseFloat(document.getElementById('tfAmount').value),
-                date: document.getElementById('tfDate').value,
-                desc: document.getElementById('tfDesc').value || 'Transferência'
-            });
-            saveLocalState();
-            renderTransfersTable();
-            e.target.reset();
-        }
-
-        function renderTransfersTable() {
-            const tbody = document.getElementById('transfersTable');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            state.transfers.forEach(tf => {
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${tf.date}</td>
-                        <td>${tf.from}</td>
-                        <td>${tf.to}</td>
-                        <td>${tf.desc}</td>
-                        <td>${formatCurrency(tf.amount)}</td>
-                        <td><button class="btn-danger-sm" onclick="state.transfers=state.transfers.filter(x=>x.id!=${tf.id});saveLocalState();renderTransfersTable();">🗑️</button></td>
-                    </tr>
-                `);
-            });
-        }
-
-        function renderReconciliationTable() {
-            const tbody = document.getElementById('reconciliationTable');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            state.accountsList.forEach(acc => {
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td><strong>${acc.bank}</strong></td>
-                        <td>${acc.initialDate}</td>
-                        <td>${formatCurrency(acc.initialBalance)}</td>
-                        <td>-</td>
-                        <td><strong>${formatCurrency(acc.initialBalance)}</strong></td>
-                        <td><input type="number" step="0.01" value="${acc.initialBalance}" style="width:100px;"></td>
-                        <td><span class="status-ok">✔ Ok</span></td>
-                        <td>-</td>
-                    </tr>
-                `);
+            state.transactions.forEach(t => {
+                tbody.insertAdjacentHTML('beforeend', `<tr><td>${t.date}</td><td><strong>${t.desc}</strong></td><td style="color:${t.type==='receita'?'green':'red'}">R$ ${t.amount}</td></tr>`);
             });
         }
 
         function updateDashboard() {
-            const filteredTxs = filterTransactionsByPeriod(state.transactions);
-            const inflows = filteredTxs.filter(t => t.type === 'receita').reduce((a, t) => a + t.amount, 0);
-            const outflows = filteredTxs.filter(t => t.type === 'despesa').reduce((a, t) => a + t.amount, 0);
-
-            if (document.getElementById('totalInflows')) document.getElementById('totalInflows').innerText = formatCurrency(inflows);
-            if (document.getElementById('totalOutflows')) document.getElementById('totalOutflows').innerText = formatCurrency(outflows);
-            if (document.getElementById('totalBalance')) document.getElementById('totalBalance').innerText = formatCurrency(inflows - outflows);
-
-            renderDashGoals(filteredTxs);
-            renderChart(filteredTxs);
+            const total = state.transactions.reduce((acc, t) => t.type === 'receita' ? acc + t.amount : acc - t.amount, 0);
+            const el = document.getElementById('totalBalance');
+            if(el) el.innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        function filterTransactionsByPeriod(txs) {
-            const periodVal = document.getElementById('filterPeriod').value;
-            if (!periodVal) return txs;
-            return txs.filter(tx => tx.date && tx.date.startsWith(periodVal));
-        }
-
-        function renderDashGoals(filteredTxs) {
-            const container = document.getElementById('dashGoalsList');
-            if (!container) return;
-            container.innerHTML = '';
-            state.categories.forEach(cat => {
-                const spent = filteredTxs.filter(t => t.type === 'despesa' && t.category === cat).reduce((a, t) => a + t.amount, 0);
-                container.insertAdjacentHTML('beforeend', `
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>${cat}</span>
-                            <span>${formatCurrency(spent)}</span>
-                        </div>
-                    </div>
-                `);
-            });
-        }
-
-        function renderChart(filteredTxs) {
-            const canvas = document.getElementById('categoryChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const catMap = {};
-            filteredTxs.filter(t => t.type === 'despesa').forEach(t => {
-                catMap[t.category] = (catMap[t.category] || 0) + t.amount;
-            });
-
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(catMap),
-                    datasets: [{ data: Object.values(catMap), backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function addCategory(e) {
-            e.preventDefault();
-            const name = document.getElementById('newCatName').value.trim();
-            if (name && !state.categories.includes(name)) {
-                state.categories.push(name);
-                saveLocalState();
-                populateCategoriesSelects();
-                document.getElementById('newCatName').value = '';
-            }
-        }
-
-        function setGoalViewMode(mode, btn) {
-            currentGoalTableMode = mode;
-            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-            if (btn) btn.classList.add('active');
-        }
-
-        function renderGoalsTable() {}
-        function openCatModal(catName) { document.getElementById('catModalOverlay').classList.add('active'); }
-        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
-
-        function addBankAccount(e) {
-            e.preventDefault();
-            state.accountsList.push({
-                id: Date.now(),
-                bank: document.getElementById('accBank').value,
-                owner: document.getElementById('accOwner').value,
-                initialBalance: parseFloat(document.getElementById('accInitialBalance').value) || 0,
-                initialDate: document.getElementById('accInitialDate').value,
-                purpose: document.getElementById('accPurpose').value
-            });
-            saveLocalState();
-            populateAccountSelects();
-            renderAccountsAndPix();
-            e.target.reset();
-        }
-
-        function addPix(e) {
-            e.preventDefault();
-            state.pixList.push({
-                id: Date.now(),
-                owner: document.getElementById('pixOwner').value,
-                bank: document.getElementById('pixBank').value,
-                key: document.getElementById('pixKey').value
-            });
-            saveLocalState();
-            renderAccountsAndPix();
-            e.target.reset();
-        }
-
-        function renderAccountsAndPix() {
-            const aTable = document.getElementById('accountsTable');
-            if (aTable) {
-                aTable.innerHTML = '';
-                state.accountsList.forEach(a => {
-                    aTable.insertAdjacentHTML('beforeend', `<tr><td><strong>${a.bank}</strong></td><td>${a.owner}</td><td>${a.initialDate}</td><td>${formatCurrency(a.initialBalance)}</td><td>${a.purpose}</td><td>-</td></tr>`);
-                });
-            }
-        }
-
-        function addVault(e) {
-            e.preventDefault();
-            state.vaultsList.push({
-                id: Date.now(),
-                name: document.getElementById('vaultName').value,
-                current: parseFloat(document.getElementById('vaultCurrent').value),
-                goal: parseFloat(document.getElementById('vaultGoal').value),
-                monthlyDeposit: parseFloat(document.getElementById('vaultMonthlyDeposit').value) || 0
-            });
-            saveLocalState();
-            renderVaults();
-            e.target.reset();
-        }
-
-        function renderVaults() {
-            const grid = document.getElementById('vaultsGrid');
-            if (!grid) return;
-            grid.innerHTML = '';
-            state.vaultsList.forEach(v => {
-                grid.insertAdjacentHTML('beforeend', `
-                    <div class="card-panel">
-                        <span style="font-weight:700;">🐷 ${v.name}</span>
-                        <span style="font-size:1.6rem; font-weight:700; color:var(--primary);">${formatCurrency(v.current)}</span>
-                    </div>
-                `);
-            });
-        }
-
-        function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-            const a = document.createElement('a');
-            a.href = dataStr;
-            a.download = `backup_lisossomos_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-        }
-
-        function importData(e) {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const imported = JSON.parse(evt.target.result);
-                    state.transactions = imported.transactions || [];
-                    localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
-                    alert('Backup importado com sucesso!');
-                    location.reload();
-                } catch { alert('Arquivo inválido.'); }
-            };
-            reader.readAsText(e.target.files[0]);
-        }
-
-        function loadSourceCodeIntoView() {
-            const box = document.getElementById('sourceCodeBox');
-            if (box) box.value = document.documentElement.outerHTML;
-        }
-
-        function copySourceCode() {
-            const box = document.getElementById('sourceCodeBox');
-            if (box) {
-                box.select();
-                document.execCommand('copy');
-                alert('Código copiado!');
-            }
+        function switchView(viewName, btn) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item button').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            if(btn) btn.classList.add('active');
         }
     </script>
 </body>
