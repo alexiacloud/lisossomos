@@ -98,6 +98,9 @@
         th, td { padding: 12px; border-bottom: 1px solid var(--border); }
         th { color: var(--text-muted); font-weight: 600; background-color: #fafafa; }
 
+        .tag-type { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .tag-receita { background-color: var(--success-light); color: var(--success); }
+        .tag-despesa { background-color: var(--danger-light); color: var(--danger); }
         .tag-status-pago { background-color: var(--success-light); color: var(--success); font-size:0.75rem; padding: 2px 6px; border-radius:4px; font-weight:700;}
         .tag-status-pendente { background-color: var(--warning-light); color: var(--warning); font-size:0.75rem; padding: 2px 6px; border-radius:4px; font-weight:700;}
 
@@ -114,7 +117,12 @@
         .btn-danger-sm { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; }
         .btn-outline { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
 
+        .progress-ok { background-color: var(--success); }
+        .progress-warning { background-color: var(--warning); }
+        .progress-danger { background-color: var(--danger); }
         .status-ok { color: var(--success); font-weight: 700; }
+        .status-diff { color: var(--danger); font-weight: 700; }
+
         .cat-clickable { color: var(--primary); cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
         .cat-clickable:hover { color: #02699d; }
 
@@ -590,10 +598,10 @@
 
     <script>
         // ==========================================
-        // CONFIGURAÇÃO DO SUPABASE (CHAVES CORRETAS)
+        // CONFIGURAÇÃO DO SUPABASE (COLE AQUI AS TUA CHAVES)
         // ==========================================
-        const SUPABASE_URL = 'https://ehxvnbdcwinnfqxstwxz.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_MUOFOFH-MazsELbh7J5zw_SJA80'; 
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Ex: 'https://xxxxxx.supabase.co'
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Chave anon/public
         
         let supabaseClient = null;
         if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase) {
@@ -603,21 +611,17 @@
         const DEFAULT_CATEGORIES = ["Mercado", "Moradia", "Lazer", "Transporte", "Saúde", "Reserva/Investimentos", "Salário", "Alimentação na rua", "Salários Lucas"];
         
         let state = {
-            transactions: [
-                {id: 1793402848629, desc: "Janta fora", amount: 30, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-30", status: "pago", recurrence: "unico"},
-                {id: 1793453932205, desc: "café da manhã", amount: 20, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-31", status: "pago", recurrence: "unico"},
-                {id: 1793463690363, desc: "Salario", amount: 11, type: "receita", account: "Banco do Brasil", category: "Salários Lucas", date: "2026-10-31", status: "pago", recurrence: "unico"}
-            ],
+            transactions: [],
             transfers: JSON.parse(localStorage.getItem('fin_transfers') || '[]'),
             categories: JSON.parse(localStorage.getItem('fin_cats') || JSON.stringify(DEFAULT_CATEGORIES)),
             fixedBills: JSON.parse(localStorage.getItem('fin_fixed_bills') || '[]'),
-            goals: JSON.parse(localStorage.getItem('fin_goals') || '{"2026-10":{"Mercado":1000,"Moradia":150,"Lazer":500,"Transporte":300,"Saúde":600,"Reserva/Investimentos":200,"Alimentação na rua":1000,"Salários Lucas":3000,"Salário Aléxia":3000}}'),
+            goals: JSON.parse(localStorage.getItem('fin_goals') || '{}'),
             annualGoals: JSON.parse(localStorage.getItem('fin_annual_goals') || '{}'),
-            pixList: JSON.parse(localStorage.getItem('fin_pix') || '[{"id":1793399798757,"owner":"Lucas Manerich","bank":"Banco do Brasil","key":"05208500175"},{"id":1793399815033,"owner":"Lucas Manerich","bank":"Nubank","key":"61981662269"},{"id":1793399828534,"owner":"Alexia Renata","bank":"C6","key":"61985039373"}]'),
-            accountsList: JSON.parse(localStorage.getItem('fin_accs') || '[{"id":1,"bank":"Banco do Brasil","owner":"Lucas","initialBalance":50,"initialDate":"2026-10-30","purpose":"Gastos gerais"},{"id":2,"bank":"Nubank","owner":"Lucas","initialBalance":0.94,"initialDate":"2026-10-30","purpose":"Pouco usada"},{"id":3,"bank":"C6","owner":"Aléxia","initialBalance":13.21,"initialDate":"2026-10-30","purpose":"Gastos gerais"}]'),
-            creditCards: JSON.parse(localStorage.getItem('fin_cards') || '[{"id":101,"name":"C6 Black","owner":"Aléxia","limit":15000,"closingDay":15,"dueDay":22}]'),
+            pixList: JSON.parse(localStorage.getItem('fin_pix') || '[]'),
+            accountsList: JSON.parse(localStorage.getItem('fin_accs') || '[{"id":1,"bank":"Nubank","owner":"Aléxia","initialBalance":1000,"initialDate":"2026-10-01","purpose":"Principal"}]'),
+            creditCards: JSON.parse(localStorage.getItem('fin_cards') || '[]'),
             bankReconciled: JSON.parse(localStorage.getItem('fin_rec') || '{}'),
-            vaultsList: JSON.parse(localStorage.getItem('fin_vaults') || '[{"id":1793402664086,"name":"Reserva de investimento","current":0,"goal":10000,"monthlyDeposit":200,"history":[]}]'),
+            vaultsList: JSON.parse(localStorage.getItem('fin_vaults') || '[]'),
             hideValues: false
         };
 
@@ -634,11 +638,11 @@
             document.getElementById('tfDate').value = todayStr;
             document.getElementById('accInitialDate').value = todayStr;
 
-            // Carrega do Supabase e garante sincronização
+            // Carrega do Supabase se estiver configurado
             if (supabaseClient) {
                 await fetchTransactionsFromSupabase();
             } else {
-                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || JSON.stringify(state.transactions));
+                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || '[]');
             }
 
             populateAccountSelects();
@@ -653,12 +657,8 @@
         async function fetchTransactionsFromSupabase() {
             try {
                 const { data, error } = await supabaseClient.from('transactions').select('*');
-                if (!error && data && data.length > 0) {
+                if (!error && data) {
                     state.transactions = data;
-                } else if (data && data.length === 0 && state.transactions.length > 0) {
-                    for (const tx of state.transactions) {
-                        await saveTransactionToSupabase(tx);
-                    }
                 }
             } catch (err) {
                 console.error("Erro ao buscar do Supabase:", err);
@@ -785,7 +785,7 @@
                     iterDate.setMonth(dateObj.getMonth() + (i - 1));
                     const newTx = {
                         id: Date.now() + i,
-                        "desc": `${desc} (${i}/${installments})`,
+                        desc: `${desc} (${i}/${installments})`,
                         amount: parcelAmount,
                         type, account, category,
                         date: iterDate.toISOString().slice(0, 10),
@@ -798,8 +798,7 @@
             } else {
                 const newTx = {
                     id: Date.now(),
-                    "desc": desc,
-                    amount, type, account, category,
+                    desc, amount, type, account, category,
                     date: startDate,
                     status,
                     recurrence
@@ -1135,6 +1134,7 @@
             const grid = document.getElementById('vaultsGrid');
             if (!grid) return;
             grid.innerHTML = '';
+            state.vaultsList.push({ ... }); // mantido
             state.vaultsList.forEach(v => {
                 grid.insertAdjacentHTML('beforeend', `
                     <div class="card-panel">
