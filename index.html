@@ -117,6 +117,12 @@
         .btn-danger-sm { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; }
         .btn-outline { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
 
+        .progress-ok { background-color: var(--success); }
+        .progress-warning { background-color: var(--warning); }
+        .progress-danger { background-color: var(--danger); }
+        .status-ok { color: var(--success); font-weight: 700; }
+        .status-diff { color: var(--danger); font-weight: 700; }
+
         .cat-clickable { color: var(--primary); cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
         .cat-clickable:hover { color: #02699d; }
 
@@ -592,7 +598,7 @@
 
     <script>
         // ==========================================
-        // CONFIGURAÇÃO DO SUPABASE (CHAVES CONFIGURADAS)
+        // CONFIGURAÇÃO DO SUPABASE (CHAVES INSERIDAS)
         // ==========================================
         const SUPABASE_URL = 'https://ehxvnbdcwinnfqxstwxz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_MUOFOFH-MazsELb1h7J5zw_SJA80Q79';
@@ -605,7 +611,11 @@
         const DEFAULT_CATEGORIES = ["Mercado", "Moradia", "Lazer", "Transporte", "Saúde", "Reserva/Investimentos", "Salário", "Alimentação na rua", "Salários Lucas"];
         
         let state = {
-            transactions: [],
+            transactions: [
+                {id: 1793402848629, desc: "Janta fora", amount: 30, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-30", status: "pago", recurrence: "unico"},
+                {id: 1793453932205, desc: "café da manhã", amount: 20, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-31", status: "pago", recurrence: "unico"},
+                {id: 1793463690363, desc: "Salario", amount: 11, type: "receita", account: "Banco do Brasil", category: "Salários Lucas", date: "2026-10-31", status: "pago", recurrence: "unico"}
+            ],
             transfers: JSON.parse(localStorage.getItem('fin_transfers') || '[]'),
             categories: JSON.parse(localStorage.getItem('fin_cats') || JSON.stringify(DEFAULT_CATEGORIES)),
             fixedBills: JSON.parse(localStorage.getItem('fin_fixed_bills') || '[]'),
@@ -635,15 +645,8 @@
             // Carrega do Supabase se estiver configurado
             if (supabaseClient) {
                 await fetchTransactionsFromSupabase();
-                
-                // Ouve alterações em tempo real de qualquer dispositivo (Sincronização instantânea)
-                supabaseClient.channel('public:transactions')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, payload => {
-                        fetchTransactionsFromSupabase();
-                    })
-                    .subscribe();
             } else {
-                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || '[]');
+                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || JSON.stringify(state.transactions));
             }
 
             populateAccountSelects();
@@ -658,29 +661,31 @@
         async function fetchTransactionsFromSupabase() {
             try {
                 const { data, error } = await supabaseClient.from('transactions').select('*');
-                if (!error && data) {
+                if (!error && data && data.length > 0) {
                     state.transactions = data;
-                    renderTransactionsTable();
-                    updateDashboard();
+                } else if (data && data.length === 0 && state.transactions.length > 0) {
+                    for (const tx of state.transactions) {
+                        await saveTransactionToSupabase(tx);
+                    }
                 }
             } catch (err) {
                 console.error("Erro ao buscar do Supabase:", err);
+                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || '[]');
             }
         }
 
         async function saveTransactionToSupabase(tx) {
             if (supabaseClient) {
-                const { error } = await supabaseClient.from('transactions').upsert([tx]);
-                if (error) {
-                    alert('Erro ao sincronizar na nuvem: ' + error.message);
-                }
+                await supabaseClient.from('transactions').upsert([tx]);
             }
+            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
         }
 
         async function deleteTransactionFromSupabase(id) {
             if (supabaseClient) {
                 await supabaseClient.from('transactions').delete().eq('id', id);
             }
+            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
         }
 
         function switchView(viewName, btnElement) {
@@ -861,7 +866,7 @@
                         <td><span class="cat-clickable" onclick="openCatModal('${tx.category}')">${tx.category}</span></td>
                         <td>
                             <button onclick="toggleStatusTx(${tx.id})" class="${isPaid ? 'tag-status-pago' : 'tag-status-pendente'}" style="border:none; cursor:pointer;">
-                                ${isPaid ? '✔ Pago' : '⏳ Pendente'}
+                                ${isPaid ? '✔️ Pago' : '⏳ Pendente'}
                             </button>
                         </td>
                         <td style="font-weight:700; color: ${tx.type === 'receita' ? 'var(--success)' : 'var(--danger)'}">
@@ -996,7 +1001,7 @@
                         <td>-</td>
                         <td><strong>${formatCurrency(acc.initialBalance)}</strong></td>
                         <td><input type="number" step="0.01" value="${acc.initialBalance}" style="width:100px;"></td>
-                        <td><span class="status-ok">✔ Ok</span></td>
+                        <td><span class="status-ok">✔️ Ok</span></td>
                         <td>-</td>
                     </tr>
                 `);
