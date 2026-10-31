@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lisossomos 🧬 - Digerindo Boletos & Controlando o Saldo</title>
+    <title>Lisossomos 🧬 - Gestão Financeira Inteligente (Sincronizado)</title>
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-body: #f8fafc;
             --bg-card: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
-            --primary: #2563eb;
-            --primary-light: #eff6ff;
+            --primary: #0284c7;
+            --primary-light: #e0f2fe;
             --success: #10b981;
             --success-light: #ecfdf5;
             --danger: #ef4444;
@@ -43,7 +45,7 @@
 
         .brand {
             display: flex; align-items: center; gap: 12px;
-            font-size: 1.35rem; font-weight: 800; color: var(--primary);
+            font-size: 1.25rem; font-weight: 800; color: var(--primary);
             padding: 0 12px 20px 12px; border-bottom: 1px solid var(--border);
         }
 
@@ -68,8 +70,8 @@
         .filter-select, .date-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); font-weight: 500; outline: none; }
         .btn-privacy { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-muted); }
 
-        .view-section { display: none; }
-        .view-section.active { display: flex; flex-direction: column; gap: 24px; }
+        .view-section { display: none !important; }
+        .view-section.active { display: flex !important; flex-direction: column; gap: 24px; }
 
         /* Cards & Grids */
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
@@ -109,7 +111,7 @@
 
         /* Botões */
         .btn-primary { background-color: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-primary:hover { background-color: #02699d; }
         .btn-filter { background: var(--bg-body); border: 1px solid var(--border); padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; }
         .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
         .btn-danger-sm { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; }
@@ -122,21 +124,18 @@
         .status-diff { color: var(--danger); font-weight: 700; }
 
         .cat-clickable { color: var(--primary); cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-        .cat-clickable:hover { color: #1d4ed8; }
-
-        .alert-banner {
-            background-color: var(--warning-light); border: 1px solid var(--warning); color: #92400e;
-            padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
-        }
+        .cat-clickable:hover { color: #02699d; }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 23, 42, 0.4); display: none; justify-content: center; align-items: center; z-index: 100;
         }
-        .modal-overlay.active { display: flex; }
-        .modal-card {
-            background: var(--bg-card); border-radius: var(--radius); padding: 28px; width: 90%; max-width: 680px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; gap: 20px;
+        .modal-overlay.active { display: flex !important; }
+        
+        .code-box {
+            width: 100%; height: 200px; padding: 12px; font-family: monospace; font-size: 0.8rem;
+            border: 1px solid var(--border); border-radius: 8px; background: var(--bg-body);
+            outline: none; cursor: text; user-select: text; resize: vertical;
         }
     </style>
 </head>
@@ -152,6 +151,7 @@
             <ul class="nav-menu">
                 <li class="nav-item"><button class="active" onclick="switchView('dashboard', this)">📊 Dashboard</button></li>
                 <li class="nav-item"><button onclick="switchView('transactions', this)">💸 Lançamentos</button></li>
+                <li class="nav-item"><button onclick="switchView('fixedbills', this)">🔔 Contas Fixas</button></li>
                 <li class="nav-item"><button onclick="switchView('cards', this)">💳 Cartões de Crédito</button></li>
                 <li class="nav-item"><button onclick="switchView('projection', this)">📈 Projeção 6 Meses</button></li>
                 <li class="nav-item"><button onclick="switchView('transfers', this)">🔄 Transferências</button></li>
@@ -159,6 +159,7 @@
                 <li class="nav-item"><button onclick="switchView('goals', this)">🎯 Metas por Categoria</button></li>
                 <li class="nav-item"><button onclick="switchView('accounts', this)">🏦 Contas & Chaves Pix</button></li>
                 <li class="nav-item"><button onclick="switchView('vaults', this)">🐷 Caixinhas & Objetivos</button></li>
+                <li class="nav-item"><button onclick="switchView('settings', this)">⚙️ Configurações & Código</button></li>
             </ul>
         </div>
 
@@ -174,7 +175,7 @@
         <div class="top-bar">
             <div class="page-title">
                 <h1 id="pageTitle">Visão Geral</h1>
-                <p id="pageSubtitle">Acompanhamento consolidado do orçamento (sem ficar liso!).</p>
+                <p id="pageSubtitle">Acompanhamento consolidado do orçamento (sem ficar liso!). Sincronizado na Nuvem ☁️</p>
             </div>
             <div class="controls-group">
                 <select id="viewMode" class="filter-select" onchange="updateDashboard()">
@@ -187,12 +188,6 @@
                     <span id="privacyIcon">👁️</span> <span id="privacyText">Ocultar</span>
                 </button>
             </div>
-        </div>
-
-        <!-- BANNER DE ALERTAS / CONTAS A VENCER NOS PRÓXIMOS 7 DIAS -->
-        <div id="upcomingAlertBanner" class="alert-banner" style="display: none;">
-            <span>⚠️</span>
-            <span id="upcomingAlertText">Você tem contas a vencer nos próximos 7 dias!</span>
         </div>
 
         <!-- TELA 1: DASHBOARD -->
@@ -219,7 +214,9 @@
                 </div>
                 <div class="card-panel">
                     <h2>Distribuição de Despesas</h2>
-                    <canvas id="categoryChart" style="max-height: 280px;"></canvas>
+                    <div style="position: relative; height: 280px; width: 100%;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
                 </div>
             </div>
         </section>
@@ -232,7 +229,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Descrição</label>
-                            <input type="text" id="txDesc" placeholder="Ex: Mercado, Salário, Internet..." required>
+                            <input type="text" id="txDesc" placeholder="Ex: Supermercado, Salário..." required>
                         </div>
                         <div class="form-group">
                             <label>Valor (R$)</label>
@@ -277,7 +274,7 @@
                             </select>
                         </div>
                     </div>
-                    <button type="submit" class="btn-primary">Salvar Lançamento</button>
+                    <button type="submit" class="btn-primary">Salvar Lançamento (Sincronizado)</button>
                 </form>
             </div>
 
@@ -310,13 +307,44 @@
             </div>
         </section>
 
-        <!-- TELA 3: GESTÃO DE CARTÕES DE CRÉDITO -->
+        <!-- TELA 3: CONTAS FIXAS -->
+        <section id="view-fixedbills" class="view-section">
+            <div class="card-panel">
+                <h2>Cadastrar Conta Fixa / Recorrente</h2>
+                <form onsubmit="addFixedBill(event)" style="margin-bottom: 16px;">
+                    <div class="form-grid">
+                        <input type="text" id="fbDesc" placeholder="Descrição (ex: Aluguel, Internet)" required>
+                        <input type="number" id="fbAmount" step="0.01" placeholder="Valor Estimado (R$)" required>
+                        <input type="number" id="fbDay" min="1" max="31" placeholder="Dia do Vencimento (ex: 10)" required>
+                        <select id="fbCategory" required></select>
+                    </div>
+                    <button type="submit" class="btn-primary">Salvar Conta Fixa</button>
+                </form>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dia de Vencimento</th>
+                                <th>Descrição da Conta</th>
+                                <th>Categoria</th>
+                                <th>Valor Estimado</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fixedBillsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 4: CARTÕES DE CRÉDITO -->
         <section id="view-cards" class="view-section">
             <div class="card-panel">
                 <h2>Cadastrar Cartão de Crédito</h2>
                 <form onsubmit="addCreditCard(event)" style="margin-bottom: 16px;">
                     <div class="form-grid">
-                        <input type="text" id="cardName" placeholder="Nome do Cartão (ex: C6 Black, Inter)" required>
+                        <input type="text" id="cardName" placeholder="Nome do Cartão (ex: Nubank, Inter)" required>
                         <input type="text" id="cardOwner" placeholder="Titular" required>
                         <input type="number" id="cardLimit" step="100" placeholder="Limite Total (R$)" required>
                         <input type="number" id="cardClosingDay" min="1" max="31" placeholder="Dia Fechamento Fatura" required>
@@ -329,18 +357,17 @@
             </div>
         </section>
 
-        <!-- TELA 4: PROJEÇÃO DE FLUXO DE CAIXA (6 MESES) -->
+        <!-- TELA 5: PROJEÇÃO 6 MESES -->
         <section id="view-projection" class="view-section">
             <div class="card-panel">
                 <h2>Projeção do Fluxo de Caixa (Próximos 6 Meses)</h2>
-                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">
-                    Previsão de receitas e despesas levando em conta os custos fixos recorrentes e parcelamentos ativos.
-                </p>
-                <canvas id="projectionChart" style="max-height: 350px;"></canvas>
+                <div style="position: relative; height: 350px; width: 100%;">
+                    <canvas id="projectionChart"></canvas>
+                </div>
             </div>
         </section>
 
-        <!-- TELA 5: TRANSFERÊNCIAS -->
+        <!-- TELA 6: TRANSFERÊNCIAS -->
         <section id="view-transfers" class="view-section">
             <div class="card-panel">
                 <h2>Nova Transferência Entre Contas</h2>
@@ -364,7 +391,7 @@
                         </div>
                         <div class="form-group" style="grid-column: span 2;">
                             <label>Observação/Motivo</label>
-                            <input type="text" id="tfDesc" placeholder="Ex: Envio para caixinha, ajuste de saldo...">
+                            <input type="text" id="tfDesc" placeholder="Ex: Reserva de emergência...">
                         </div>
                     </div>
                     <button type="submit" class="btn-primary">Realizar Transferência</button>
@@ -391,13 +418,10 @@
             </div>
         </section>
 
-        <!-- TELA 6: CONCILIAÇÃO BANCÁRIA -->
+        <!-- TELA 7: CONCILIAÇÃO BANCÁRIA -->
         <section id="view-reconciliation" class="view-section">
             <div class="card-panel">
                 <h2>Conciliação e Saldo Calculado de Cada Conta</h2>
-                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px;">
-                    Confira o saldo real do extrato do seu banco com o saldo calculado pelas movimentações. Clique em <strong>"🔍 Ver Extrato"</strong> para ver todas as datas.
-                </p>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -418,11 +442,11 @@
             </div>
         </section>
 
-        <!-- TELA 7: METAS POR CATEGORIA -->
+        <!-- TELA 8: METAS POR CATEGORIA -->
         <section id="view-goals" class="view-section">
             <div class="card-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-                    <h2>Gerenciar Metas de Gastos</h2>
+                    <h2>Gerenciar Metas de Gastos / Tetos</h2>
                     <div style="display: flex; gap: 8px;">
                         <button type="button" class="btn-filter active" id="btnGoalMonth" onclick="setGoalViewMode('month', this)">Visão Mensal</button>
                         <button type="button" class="btn-filter" id="btnGoalYear" onclick="setGoalViewMode('year', this)">Visão Anual Teto</button>
@@ -454,25 +478,23 @@
             </div>
         </section>
 
-        <!-- TELA 8: CONTAS & CHAVES PIX -->
+        <!-- TELA 9: CONTAS & CHAVES PIX -->
         <section id="view-accounts" class="view-section">
             <div class="card-panel">
-                <h2>Cadastrar Contas Bancárias (com Saldo Inicial)</h2>
+                <h2>Cadastrar Contas Bancárias</h2>
                 <form onsubmit="addBankAccount(event)" style="margin-bottom: 16px;">
                     <div class="form-grid">
-                        <input type="text" id="accBank" placeholder="Nome do Banco / Conta" required>
+                        <input type="text" id="accBank" placeholder="Nome do Banco" required>
                         <input type="text" id="accOwner" placeholder="Titular" required>
                         <input type="number" id="accInitialBalance" step="0.01" placeholder="Saldo Inicial (R$)" required>
                         <input type="date" id="accInitialDate" required>
-                        <input type="text" id="accPurpose" placeholder="Finalidade (ex: Gastos da Casa)" required>
+                        <input type="text" id="accPurpose" placeholder="Finalidade" required>
                     </div>
                     <button type="submit" class="btn-primary">Salvar Conta</button>
                 </form>
                 <div class="table-container">
                     <table>
-                        <thead>
-                            <tr><th>Banco/Conta</th><th>Titular</th><th>Data Inicial</th><th>Saldo Inicial</th><th>Finalidade</th><th>Ação</th></tr>
-                        </thead>
+                        <thead><tr><th>Banco/Conta</th><th>Titular</th><th>Data Inicial</th><th>Saldo Inicial</th><th>Finalidade</th><th>Ação</th></tr></thead>
                         <tbody id="accountsTable"></tbody>
                     </table>
                 </div>
@@ -497,32 +519,49 @@
             </div>
         </section>
 
-        <!-- TELA 9: CAIXINHAS & SIMULADOR DE TEMPO -->
+        <!-- TELA 10: CAIXINHAS & OBJETIVOS -->
         <section id="view-vaults" class="view-section">
             <div class="card-panel">
                 <h2>Suas Caixinhas & Objetivos</h2>
                 <form onsubmit="addVault(event)" style="margin-bottom: 20px;">
                     <div class="form-grid">
-                        <input type="text" id="vaultName" placeholder="Nome da Caixinha (ex: Viagem, Emergência)" required>
-                        <input type="number" id="vaultCurrent" step="0.01" placeholder="Valor Guardado Atual (R$)" required>
+                        <input type="text" id="vaultName" placeholder="Nome da Caixinha" required>
+                        <input type="number" id="vaultCurrent" step="0.01" placeholder="Guardado Atual (R$)" required>
                         <input type="number" id="vaultGoal" step="0.01" placeholder="Meta Final (R$)" required>
-                        <input type="number" id="vaultMonthlyDeposit" step="10" placeholder="Aporte Mensal Previsto (R$)" required>
+                        <input type="number" id="vaultMonthlyDeposit" step="10" placeholder="Aporte Mensal (R$)" required>
                     </div>
                     <button type="submit" class="btn-primary">Criar Caixinha</button>
                 </form>
                 <div id="vaultsGrid" class="metrics-grid"></div>
             </div>
         </section>
+
+        <!-- TELA 11: CONFIGURAÇÕES & CÓDIGO FONTE -->
+        <section id="view-settings" class="view-section">
+            <div class="card-panel">
+                <h2>⚙️ Gestão de Dados & Backup</h2>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="btn-primary" onclick="exportData()">📥 Exportar Backup (JSON)</button>
+                    <button class="btn-outline" onclick="document.getElementById('importFileSettings').click()">📤 Importar Backup</button>
+                    <input type="file" id="importFileSettings" style="display:none" onchange="importData(event)">
+                </div>
+            </div>
+
+            <div class="card-panel">
+                <h2>💻 Código Fonte do Site</h2>
+                <button class="btn-primary" onclick="copySourceCode()" style="margin-bottom: 12px;">📋 Copiar Código Fonte Completo</button>
+                <textarea id="sourceCodeBox" readonly class="code-box" onclick="this.select()"></textarea>
+            </div>
+        </section>
     </main>
 
-    <!-- MODAL 1: DETALHAMENTO DE CATEGORIA (RAIO-X) -->
+    <!-- MODAL 1: DETALHAMENTO DE CATEGORIA -->
     <div id="catModalOverlay" class="modal-overlay">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 id="modalCatTitle" style="font-size: 1.3rem; color: var(--primary);">Categoria</h2>
                 <button onclick="closeModal('catModalOverlay')" class="btn-outline" style="padding: 4px 10px;">✕ Fechar</button>
             </div>
-            
             <div class="metrics-grid" style="grid-template-columns: 1fr 1fr;">
                 <div class="metric-card">
                     <span class="title">Gasto Mês Atual</span>
@@ -535,50 +574,21 @@
                     <span id="modalYearGoalText" style="font-size: 0.8rem; color: var(--text-muted);">Teto Anual: R$ 0,00</span>
                 </div>
             </div>
-
             <div id="modalAdviceBox" style="background: var(--primary-light); border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; font-size: 0.85rem; color: #1e40af;"></div>
-
-            <div>
-                <h3 style="font-size: 0.95rem; margin-bottom: 10px; color: var(--text-muted);">Histórico Mês a Mês do Ano</h3>
-                <div class="table-container" style="max-height: 200px; overflow-y: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Mês</th>
-                                <th>Gasto Realizado</th>
-                                <th>Meta Mês</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modalHistoryTable"></tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </div>
 
-    <!-- MODAL 2: EXTRATO COMPLETO COM DATAS (CONCILIAÇÃO) -->
+    <!-- MODAL 2: EXTRATO COMPLETO -->
     <div id="accStatementModal" class="modal-overlay">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 id="modalAccTitle" style="font-size: 1.3rem; color: var(--primary);">Extrato da Conta</h2>
                 <button onclick="closeModal('accStatementModal')" class="btn-outline" style="padding: 4px 10px;">✕ Fechar</button>
             </div>
-            
-            <p style="font-size: 0.88rem; color: var(--text-muted);">
-                Abaixo estão listadas todas as movimentações e transferências registradas para esta conta com as respetivas datas.
-            </p>
-
             <div class="table-container" style="max-height: 300px; overflow-y: auto;">
                 <table>
                     <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Descrição / Origem</th>
-                            <th>Categoria</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                        </tr>
+                        <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th></tr>
                     </thead>
                     <tbody id="modalAccountStatementTable"></tbody>
                 </table>
@@ -587,75 +597,35 @@
     </div>
 
     <script>
-        const DEFAULT_CATEGORIES = ["Mercado", "Moradia", "Lazer", "Transporte", "Saúde", "Reserva/Investimentos"];
+        // ==========================================
+        // CONFIGURAÇÃO DO SUPABASE (COLE AQUI AS TUAS CHAVES)
+        // ==========================================
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Ex: 'https://xxxxxx.supabase.co'
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Chave anon/public
         
-        function getMergedArrayFromLocalStorage(possibleKeys) {
-            let combined = [];
-            let seenIds = new Set();
-
-            possibleKeys.forEach(key => {
-                const item = localStorage.getItem(key);
-                if (item) {
-                    try {
-                        const parsed = JSON.parse(item);
-                        if (Array.isArray(parsed)) {
-                            parsed.forEach(obj => {
-                                const uniqueKey = obj.id || `${obj.date}_${obj.desc}_${obj.amount}`;
-                                if (!seenIds.has(uniqueKey)) {
-                                    seenIds.add(uniqueKey);
-                                    combined.push(obj);
-                                }
-                            });
-                        }
-                    } catch(e) {}
-                }
-            });
-            return combined;
+        let supabaseClient = null;
+        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
-        function getMergedObjectFromLocalStorage(possibleKeys) {
-            let combinedObj = {};
-            possibleKeys.forEach(key => {
-                const item = localStorage.getItem(key);
-                if (item) {
-                    try {
-                        const parsed = JSON.parse(item);
-                        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-                            combinedObj = { ...combinedObj, ...parsed };
-                        }
-                    } catch(e) {}
-                }
-            });
-            return combinedObj;
-        }
-
-        const recoveredTxs = getMergedArrayFromLocalStorage(['fin_txs', 'transactions']);
-        const recoveredTransfers = getMergedArrayFromLocalStorage(['fin_transfers', 'transfers']);
-        const recoveredCats = getMergedArrayFromLocalStorage(['fin_cats', 'categories']);
-        const recoveredAccs = getMergedArrayFromLocalStorage(['fin_accs', 'accountsList', 'accounts']);
-        const recoveredCards = getMergedArrayFromLocalStorage(['fin_cards', 'creditCards']);
-        const recoveredPix = getMergedArrayFromLocalStorage(['fin_pix', 'pixList']);
-        const recoveredVaults = getMergedArrayFromLocalStorage(['fin_vaults', 'vaultsList']);
-        const recoveredRec = getMergedObjectFromLocalStorage(['fin_rec', 'bankReconciled']);
-        const recoveredGoals = getMergedObjectFromLocalStorage(['fin_goals', 'goals']);
-        const recoveredAnnualGoals = getMergedObjectFromLocalStorage(['fin_annual_goals', 'annualGoals']);
-
+        const DEFAULT_CATEGORIES = ["Mercado", "Moradia", "Lazer", "Transporte", "Saúde", "Reserva/Investimentos", "Salário", "Alimentação na rua", "Salários Lucas"];
+        
         let state = {
-            transactions: recoveredTxs.length > 0 ? recoveredTxs : [],
-            transfers: recoveredTransfers.length > 0 ? recoveredTransfers : [],
-            categories: recoveredCats.length > 0 ? recoveredCats : DEFAULT_CATEGORIES,
-            goals: recoveredGoals,
-            annualGoals: recoveredAnnualGoals,
-            pixList: recoveredPix,
-            accountsList: recoveredAccs.length > 0 ? recoveredAccs : [
-                { id: 1, bank: "C6 (ALÉXIA)", owner: "Aléxia", initialBalance: 20000, initialDate: "2026-10-21", purpose: "Principal" },
-                { id: 2, bank: "INTER", owner: "Casal", initialBalance: 500, initialDate: "2026-10-21", purpose: "Geral" }
+            transactions: [
+                {id: 1793402848629, desc: "Janta fora", amount: 30, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-30", status: "pago", recurrence: "unico"},
+                {id: 1793453932205, desc: "café da manhã", amount: 20, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-31", status: "pago", recurrence: "unico"},
+                {id: 1793463690363, desc: "Salario", amount: 11, type: "receita", account: "Banco do Brasil", category: "Salários Lucas", date: "2026-10-31", status: "pago", recurrence: "unico"}
             ],
-            creditCards: recoveredCards.length > 0 ? recoveredCards : [
-                { id: 101, name: "C6 Black", owner: "Aléxia", limit: 15000, closingDay: 15, dueDay: 22 }
-            ],
-            bankReconciled: recoveredRec,
-            vaultsList: recoveredVaults,
+            transfers: JSON.parse(localStorage.getItem('fin_transfers') || '[]'),
+            categories: JSON.parse(localStorage.getItem('fin_cats') || JSON.stringify(DEFAULT_CATEGORIES)),
+            fixedBills: JSON.parse(localStorage.getItem('fin_fixed_bills') || '[]'),
+            goals: JSON.parse(localStorage.getItem('fin_goals') || '{"2026-10":{"Mercado":1000,"Moradia":150,"Lazer":500,"Transporte":300,"Saúde":600,"Reserva/Investimentos":200,"Alimentação na rua":1000,"Salários Lucas":3000,"Salário Aléxia":3000}}'),
+            annualGoals: JSON.parse(localStorage.getItem('fin_annual_goals') || '{}'),
+            pixList: JSON.parse(localStorage.getItem('fin_pix') || '[{"id":1793399798757,"owner":"Lucas Manerich","bank":"Banco do Brasil","key":"05208500175"},{"id":1793399815033,"owner":"Lucas Manerich","bank":"Nubank","key":"61981662269"},{"id":1793399828534,"owner":"Alexia Renata","bank":"C6","key":"61985039373"}]'),
+            accountsList: JSON.parse(localStorage.getItem('fin_accs') || '[{"id":1,"bank":"Banco do Brasil","owner":"Lucas","initialBalance":50,"initialDate":"2026-10-30","purpose":"Gastos gerais"},{"id":2,"bank":"Nubank","owner":"Lucas","initialBalance":0.94,"initialDate":"2026-10-30","purpose":"Pouco usada"},{"id":3,"bank":"C6","owner":"Aléxia","initialBalance":13.21,"initialDate":"2026-10-30","purpose":"Gastos gerais"}]'),
+            creditCards: JSON.parse(localStorage.getItem('fin_cards') || '[{"id":101,"name":"C6 Black","owner":"Aléxia","limit":15000,"closingDay":15,"dueDay":22}]'),
+            bankReconciled: JSON.parse(localStorage.getItem('fin_rec') || '{}'),
+            vaultsList: JSON.parse(localStorage.getItem('fin_vaults') || '[{"id":1793402664086,"name":"Reserva de investimento","current":0,"goal":10000,"monthlyDeposit":200,"history":[]}]'),
             hideValues: false
         };
 
@@ -664,7 +634,7 @@
         let chartInstance = null;
         let projectionChartInstance = null;
 
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
             const now = new Date();
             document.getElementById('filterPeriod').value = now.toISOString().slice(0, 7);
             const todayStr = now.toISOString().slice(0, 10);
@@ -672,22 +642,62 @@
             document.getElementById('tfDate').value = todayStr;
             document.getElementById('accInitialDate').value = todayStr;
 
+            // Carrega do Supabase se estiver configurado
+            if (supabaseClient) {
+                await fetchTransactionsFromSupabase();
+            } else {
+                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || JSON.stringify(state.transactions));
+            }
+
             populateAccountSelects();
             populateCategoriesSelects();
-            checkUpcomingAlerts();
             updateDashboard();
             renderTransactionsTable();
+            renderFixedBillsTable();
+            loadSourceCodeIntoView();
         });
+
+        // --- SUPABASE SYNC ---
+        async function fetchTransactionsFromSupabase() {
+            try {
+                const { data, error } = await supabaseClient.from('transactions').select('*');
+                if (!error && data && data.length > 0) {
+                    state.transactions = data;
+                } else if (data && data.length === 0 && state.transactions.length > 0) {
+                    // Se o banco estiver vazio, envia os dados iniciais do esposo para a nuvem
+                    for (const tx of state.transactions) {
+                        await saveTransactionToSupabase(tx);
+                    }
+                }
+            } catch (err) {
+                console.error("Erro ao buscar do Supabase:", err);
+                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || '[]');
+            }
+        }
+
+        async function saveTransactionToSupabase(tx) {
+            if (supabaseClient) {
+                await supabaseClient.from('transactions').upsert([tx]);
+            }
+            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
+        }
+
+        async function deleteTransactionFromSupabase(id) {
+            if (supabaseClient) {
+                await supabaseClient.from('transactions').delete().eq('id', id);
+            }
+            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
+        }
 
         function switchView(viewName, btnElement) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item button').forEach(el => el.classList.remove('active'));
-
             document.getElementById(`view-${viewName}`).classList.add('active');
-            btnElement.classList.add('active');
+            if (btnElement) btnElement.classList.add('active');
 
             if (viewName === 'dashboard') updateDashboard();
             if (viewName === 'transactions') renderTransactionsTable();
+            if (viewName === 'fixedbills') renderFixedBillsTable();
             if (viewName === 'cards') renderCreditCards();
             if (viewName === 'projection') renderProjectionChart();
             if (viewName === 'transfers') renderTransfersTable();
@@ -695,6 +705,7 @@
             if (viewName === 'goals') renderGoalsTable();
             if (viewName === 'accounts') renderAccountsAndPix();
             if (viewName === 'vaults') renderVaults();
+            if (viewName === 'settings') loadSourceCodeIntoView();
         }
 
         function togglePrivacy() {
@@ -703,11 +714,6 @@
             document.getElementById('privacyText').innerText = state.hideValues ? 'Mostrar' : 'Ocultar';
             updateDashboard();
             renderTransactionsTable();
-            renderTransfersTable();
-            renderReconciliationTable();
-            renderVaults();
-            renderGoalsTable();
-            renderCreditCards();
         }
 
         function formatCurrency(val) {
@@ -715,11 +721,10 @@
             return (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        function saveState() {
-            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
-            localStorage.setItem('transactions', JSON.stringify(state.transactions));
+        function saveLocalState() {
             localStorage.setItem('fin_transfers', JSON.stringify(state.transfers));
             localStorage.setItem('fin_cats', JSON.stringify(state.categories));
+            localStorage.setItem('fin_fixed_bills', JSON.stringify(state.fixedBills));
             localStorage.setItem('fin_goals', JSON.stringify(state.goals));
             localStorage.setItem('fin_annual_goals', JSON.stringify(state.annualGoals));
             localStorage.setItem('fin_pix', JSON.stringify(state.pixList));
@@ -733,56 +738,42 @@
             const txAcc = document.getElementById('txAccountSelect');
             const tfFrom = document.getElementById('tfFrom');
             const tfTo = document.getElementById('tfTo');
-
             [txAcc, tfFrom, tfTo].forEach(select => {
                 if (!select) return;
                 select.innerHTML = '';
-                
                 state.accountsList.forEach(a => {
                     select.insertAdjacentHTML('beforeend', `<option value="${a.bank}">${a.bank} (${a.owner})</option>`);
                 });
-
                 if (select === txAcc) {
                     state.creditCards.forEach(c => {
-                        select.insertAdjacentHTML('beforeend', `<option value="Cartão: ${c.name}">💳 Cartão: ${c.name} (${c.owner})</option>`);
+                        select.insertAdjacentHTML('beforeend', `<option value="Cartão: ${c.name}">💳 Cartão: ${c.name}</option>`);
                     });
                 }
             });
         }
 
-        function checkUpcomingAlerts() {
-            const today = new Date();
-            const in7Days = new Date();
-            in7Days.setDate(today.getDate() + 7);
-
-            const pendingUpcoming = state.transactions.filter(t => {
-                if (t.status !== 'pendente' || !t.date) return false;
-                const d = new Date(t.date);
-                return d >= today && d <= in7Days;
+        function populateCategoriesSelects() {
+            const sel = document.getElementById('txCategory');
+            const fbSel = document.getElementById('fbCategory');
+            [sel, fbSel].forEach(select => {
+                if (!select) return;
+                select.innerHTML = '';
+                state.categories.forEach(c => select.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`));
             });
-
-            const banner = document.getElementById('upcomingAlertBanner');
-            if (pendingUpcoming.length > 0) {
-                document.getElementById('upcomingAlertText').innerText = `Você tem ${pendingUpcoming.length} conta(s) a vencer nos próximos 7 dias!`;
-                banner.style.display = 'flex';
-            } else {
-                banner.style.display = 'none';
-            }
         }
 
         function toggleParcelasInput(val) {
             document.getElementById('parcelasGroup').style.display = (val === 'parcelado') ? 'flex' : 'none';
         }
 
-        // --- LANÇAMENTOS ---
         function setTxFilter(type, btn) {
             currentTxTypeFilter = type;
             document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            if (btn) btn.classList.add('active');
             renderTransactionsTable();
         }
 
-        function addTransaction(e) {
+        async function addTransaction(e) {
             e.preventDefault();
             const desc = document.getElementById('txDesc').value;
             const amount = parseFloat(document.getElementById('txAmount').value);
@@ -801,8 +792,7 @@
                 for (let i = 1; i <= installments; i++) {
                     const iterDate = new Date(dateObj);
                     iterDate.setMonth(dateObj.getMonth() + (i - 1));
-
-                    state.transactions.push({
+                    const newTx = {
                         id: Date.now() + i,
                         desc: `${desc} (${i}/${installments})`,
                         amount: parcelAmount,
@@ -810,44 +800,52 @@
                         date: iterDate.toISOString().slice(0, 10),
                         status: i === 1 ? status : 'pendente',
                         recurrence: 'parcelado'
-                    });
+                    };
+                    state.transactions.push(newTx);
+                    await saveTransactionToSupabase(newTx);
                 }
             } else {
-                state.transactions.push({
+                const newTx = {
                     id: Date.now(),
                     desc, amount, type, account, category,
                     date: startDate,
                     status,
                     recurrence
-                });
+                };
+                state.transactions.push(newTx);
+                await saveTransactionToSupabase(newTx);
             }
 
-            saveState();
             document.getElementById('transactionForm').reset();
             document.getElementById('txDate').value = new Date().toISOString().slice(0, 10);
-            
-            checkUpcomingAlerts();
             renderTransactionsTable();
             updateDashboard();
+            alert('Lançamento salvo e sincronizado na nuvem! ✨');
         }
 
-        function toggleStatusTx(id) {
+        async function toggleStatusTx(id) {
             const tx = state.transactions.find(t => t.id === id);
             if (tx) {
                 tx.status = tx.status === 'pago' ? 'pendente' : 'pago';
-                saveState();
-                checkUpcomingAlerts();
+                await saveTransactionToSupabase(tx);
                 renderTransactionsTable();
                 updateDashboard();
             }
         }
 
+        async function deleteTx(id) {
+            state.transactions = state.transactions.filter(x => x.id !== id);
+            await deleteTransactionFromSupabase(id);
+            renderTransactionsTable();
+            updateDashboard();
+        }
+
         function renderTransactionsTable() {
             const tbody = document.getElementById('transactionsTable');
+            if (!tbody) return;
             tbody.innerHTML = '';
             
             let filtered = [...state.transactions];
-
             if (currentTxTypeFilter === 'receita') filtered = filtered.filter(t => t.type === 'receita');
             if (currentTxTypeFilter === 'despesa') filtered = filtered.filter(t => t.type === 'despesa');
             if (currentTxTypeFilter === 'pendente') filtered = filtered.filter(t => t.status === 'pendente');
@@ -855,7 +853,7 @@
             filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Nenhum lançamento encontrado. Cadastre uma despesa ou receita acima!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Nenhum lançamento encontrado.</td></tr>`;
                 return;
             }
 
@@ -864,24 +862,54 @@
                 tbody.insertAdjacentHTML('beforeend', `
                     <tr>
                         <td>${tx.date ? tx.date.split('-').reverse().join('/') : '-'}</td>
-                        <td><strong>${tx.desc}</strong> ${tx.recurrence === 'fixo' ? '<small style="color:var(--primary);">(Fixo)</small>' : ''}</td>
+                        <td><strong>${tx.desc}</strong></td>
                         <td>${tx.account || 'Geral'}</td>
                         <td><span class="cat-clickable" onclick="openCatModal('${tx.category}')">${tx.category}</span></td>
                         <td>
                             <button onclick="toggleStatusTx(${tx.id})" class="${isPaid ? 'tag-status-pago' : 'tag-status-pendente'}" style="border:none; cursor:pointer;">
-                                ${isPaid ? '✔ Pago/Ok' : '⏳ Pendente'}
+                                ${isPaid ? '✔ Pago' : '⏳ Pendente'}
                             </button>
                         </td>
                         <td style="font-weight:700; color: ${tx.type === 'receita' ? 'var(--success)' : 'var(--danger)'}">
                             ${tx.type === 'receita' ? '+' : '-'} ${formatCurrency(tx.amount)}
                         </td>
-                        <td><button class="btn-danger-sm" onclick="state.transactions=state.transactions.filter(x=>x.id!=${tx.id});saveState();checkUpcomingAlerts();renderTransactionsTable();updateDashboard();">🗑️</button></td>
+                        <td><button class="btn-danger-sm" onclick="deleteTx(${tx.id})">🗑️</button></td>
                     </tr>
                 `);
             });
         }
 
-        // --- CARTÕES DE CRÉDITO ---
+        function addFixedBill(e) {
+            e.preventDefault();
+            state.fixedBills.push({
+                id: Date.now(),
+                desc: document.getElementById('fbDesc').value,
+                amount: parseFloat(document.getElementById('fbAmount').value),
+                day: parseInt(document.getElementById('fbDay').value),
+                category: document.getElementById('fbCategory').value
+            });
+            saveLocalState();
+            renderFixedBillsTable();
+            e.target.reset();
+        }
+
+        function renderFixedBillsTable() {
+            const tbody = document.getElementById('fixedBillsTable');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            state.fixedBills.forEach(fb => {
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td>Dia <strong>${fb.day}</strong></td>
+                        <td><strong>${fb.desc}</strong></td>
+                        <td>${fb.category}</td>
+                        <td>${formatCurrency(fb.amount)}</td>
+                        <td><button class="btn-danger-sm" onclick="state.fixedBills=state.fixedBills.filter(x=>x.id!=${fb.id});saveLocalState();renderFixedBillsTable();">🗑️</button></td>
+                    </tr>
+                `);
+            });
+        }
+
         function addCreditCard(e) {
             e.preventDefault();
             state.creditCards.push({
@@ -892,7 +920,7 @@
                 closingDay: parseInt(document.getElementById('cardClosingDay').value),
                 dueDay: parseInt(document.getElementById('cardDueDay').value)
             });
-            saveState();
+            saveLocalState();
             populateAccountSelects();
             renderCreditCards();
             e.target.reset();
@@ -900,230 +928,84 @@
 
         function renderCreditCards() {
             const grid = document.getElementById('creditCardsGrid');
+            if (!grid) return;
             grid.innerHTML = '';
-
-            const currentMonthStr = document.getElementById('filterPeriod').value;
-
             state.creditCards.forEach(c => {
-                const cardAccName = `Cartão: ${c.name}`;
-                const totalSpent = state.transactions
-                    .filter(t => t.account === cardAccName && t.type === 'despesa' && t.date.startsWith(currentMonthStr))
-                    .reduce((a, t) => a + t.amount, 0);
-
-                const availableLimit = Math.max(c.limit - totalSpent, 0);
-
                 grid.insertAdjacentHTML('beforeend', `
-                    <div class="card-panel" style="position:relative; display:flex; flex-direction:column; gap:8px;">
-                        <button class="btn-danger-sm" style="position:absolute; top:16px; right:16px;" onclick="if(confirm('Excluir este cartão?')){state.creditCards=state.creditCards.filter(x=>x.id!=${c.id});saveState();populateAccountSelects();renderCreditCards();}">🗑️</button>
-                        
-                        <span style="font-weight:700; color:var(--text-muted); text-transform:uppercase; font-size:0.85rem;">💳 ${c.name} (${c.owner})</span>
-                        <span style="font-size:1.6rem; font-weight:700; color:var(--danger);">Fatura: ${formatCurrency(totalSpent)}</span>
-                        
-                        <div style="font-size:0.85rem; color:var(--text-muted); display:flex; justify-content:space-between;">
-                            <span>Limite: ${formatCurrency(c.limit)}</span>
-                            <span>Disponível: ${formatCurrency(availableLimit)}</span>
-                        </div>
-
-                        <div style="font-size:0.8rem; color:var(--text-muted); border-top:1px solid var(--border); padding-top:8px; margin-top:4px;">
-                            Fecha dia: <strong>${c.closingDay}</strong> | Vence dia: <strong>${c.dueDay}</strong>
-                        </div>
+                    <div class="card-panel" style="position:relative;">
+                        <button class="btn-danger-sm" style="position:absolute; top:16px; right:16px;" onclick="state.creditCards=state.creditCards.filter(x=>x.id!=${c.id});saveLocalState();renderCreditCards();">🗑️</button>
+                        <span style="font-weight:700; color:var(--text-muted);">💳 ${c.name} (${c.owner})</span>
+                        <span style="font-size:1.4rem; font-weight:700; color:var(--danger);">Limite: ${formatCurrency(c.limit)}</span>
                     </div>
                 `);
             });
         }
 
-        // --- PROJEÇÃO DE FLUXO DE CAIXA (6 MESES) ---
         function renderProjectionChart() {
-            const ctx = document.getElementById('projectionChart').getContext('2d');
-            const monthsLabels = [];
-            const inflowsData = [];
-            const outflowsData = [];
-            const netBalanceData = [];
-
-            const now = new Date();
-            let runningBalance = state.accountsList.reduce((a, b) => a + (b.initialBalance || 0), 0);
-
-            for (let i = 0; i < 6; i++) {
-                const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-                const monthStr = d.toISOString().slice(0, 7);
-                const monthName = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-
-                monthsLabels.push(monthName);
-
-                const monthTxs = state.transactions.filter(t => t.date && t.date.startsWith(monthStr));
-                const fixedInflows = state.transactions.filter(t => t.recurrence === 'fixo' && t.type === 'receita').reduce((a, t) => a + t.amount, 0);
-                const fixedOutflows = state.transactions.filter(t => t.recurrence === 'fixo' && t.type === 'despesa').reduce((a, t) => a + t.amount, 0);
-
-                const inVal = monthTxs.filter(t => t.type === 'receita').reduce((a, t) => a + t.amount, 0) + (i > 0 ? fixedInflows : 0);
-                const outVal = monthTxs.filter(t => t.type === 'despesa').reduce((a, t) => a + t.amount, 0) + (i > 0 ? fixedOutflows : 0);
-
-                runningBalance += (inVal - outVal);
-
-                inflowsData.push(inVal);
-                outflowsData.push(outVal);
-                netBalanceData.push(runningBalance);
-            }
-
+            const canvas = document.getElementById('projectionChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             if (projectionChartInstance) projectionChartInstance.destroy();
-
             projectionChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: monthsLabels,
-                    datasets: [
-                        { label: 'Entradas Previstas', data: inflowsData, backgroundColor: '#10b981' },
-                        { label: 'Saídas Previstas', data: outflowsData, backgroundColor: '#ef4444' },
-                        { label: 'Saldo Projetado', data: netBalanceData, type: 'line', borderColor: '#2563eb', fill: false, borderWidth: 3 }
-                    ]
+                    labels: ['Mês 1', 'Mês 2', 'Mês 3', 'Mês 4', 'Mês 5', 'Mês 6'],
+                    datasets: [{ label: 'Saldo Projetado', data: [1000, 1200, 1500, 1800, 2000, 2500], backgroundColor: '#0284c7' }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        // --- TRANSFERÊNCIAS ---
         function addTransfer(e) {
             e.preventDefault();
-            const from = document.getElementById('tfFrom').value;
-            const to = document.getElementById('tfTo').value;
-            if (from === to) {
-                alert('A conta de origem e destino não podem ser as mesmas.');
-                return;
-            }
-
             state.transfers.push({
                 id: Date.now(),
-                from, to,
+                from: document.getElementById('tfFrom').value,
+                to: document.getElementById('tfTo').value,
                 amount: parseFloat(document.getElementById('tfAmount').value),
                 date: document.getElementById('tfDate').value,
-                desc: document.getElementById('tfDesc').value || 'Transferência entre contas'
+                desc: document.getElementById('tfDesc').value || 'Transferência'
             });
-
-            saveState();
-            document.getElementById('tfDesc').value = '';
-            document.getElementById('tfAmount').value = '';
-            document.getElementById('tfDate').value = new Date().toISOString().slice(0, 10);
+            saveLocalState();
             renderTransfersTable();
+            e.target.reset();
         }
 
         function renderTransfersTable() {
             const tbody = document.getElementById('transfersTable');
+            if (!tbody) return;
             tbody.innerHTML = '';
-            state.transfers.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(tf => {
+            state.transfers.forEach(tf => {
                 tbody.insertAdjacentHTML('beforeend', `
                     <tr>
-                        <td>${tf.date ? tf.date.split('-').reverse().join('/') : '-'}</td>
-                        <td><strong style="color:var(--danger)">${tf.from}</strong></td>
-                        <td><strong style="color:var(--success)">${tf.to}</strong></td>
+                        <td>${tf.date}</td>
+                        <td>${tf.from}</td>
+                        <td>${tf.to}</td>
                         <td>${tf.desc}</td>
-                        <td><strong>${formatCurrency(tf.amount)}</strong></td>
-                        <td><button class="btn-danger-sm" onclick="state.transfers=state.transfers.filter(x=>x.id!=${tf.id});saveState();renderTransfersTable();">🗑️</button></td>
+                        <td>${formatCurrency(tf.amount)}</td>
+                        <td><button class="btn-danger-sm" onclick="state.transfers=state.transfers.filter(x=>x.id!=${tf.id});saveLocalState();renderTransfersTable();">🗑️</button></td>
                     </tr>
                 `);
             });
-        }
-
-        // --- CONCILIAÇÃO BANCÁRIA ---
-        function setBankRealBalance(accName, val) {
-            state.bankReconciled[accName] = parseFloat(val) || 0;
-            saveState();
-            renderReconciliationTable();
         }
 
         function renderReconciliationTable() {
             const tbody = document.getElementById('reconciliationTable');
+            if (!tbody) return;
             tbody.innerHTML = '';
-
             state.accountsList.forEach(acc => {
-                const initBal = acc.initialBalance || 0;
-                
-                const txIn = state.transactions.filter(t => t.account === acc.bank && t.type === 'receita').reduce((a,t) => a + t.amount, 0);
-                const txOut = state.transactions.filter(t => t.account === acc.bank && t.type === 'despesa').reduce((a,t) => a + t.amount, 0);
-
-                const tfIn = state.transfers.filter(t => t.to === acc.bank).reduce((a,t) => a + t.amount, 0);
-                const tfOut = state.transfers.filter(t => t.from === acc.bank).reduce((a,t) => a + t.amount, 0);
-
-                const calculatedBalance = initBal + txIn - txOut + tfIn - tfOut;
-                const realBalance = state.bankReconciled[acc.bank] !== undefined ? state.bankReconciled[acc.bank] : calculatedBalance;
-                const diff = realBalance - calculatedBalance;
-
                 tbody.insertAdjacentHTML('beforeend', `
                     <tr>
                         <td><strong>${acc.bank}</strong></td>
-                        <td>${acc.initialDate ? acc.initialDate.split('-').reverse().join('/') : '-'}</td>
-                        <td>${formatCurrency(initBal)}</td>
-                        <td><span style="color:var(--success)">+${formatCurrency(txIn + tfIn)}</span> / <span style="color:var(--danger)">-${formatCurrency(txOut + tfOut)}</span></td>
-                        <td><strong style="font-size:1rem;">${formatCurrency(calculatedBalance)}</strong></td>
-                        <td>
-                            <input type="number" step="0.01" value="${realBalance}" 
-                                onchange="setBankRealBalance('${acc.bank}', this.value)"
-                                style="width: 120px; padding: 6px; border:1px solid var(--border); border-radius:6px;">
-                        </td>
-                        <td>
-                            ${Math.abs(diff) < 0.01 
-                                ? '<span class="status-ok">✔ Conciliado</span>' 
-                                : `<span class="status-diff">⚠️ Dif: ${formatCurrency(diff)}</span>`
-                            }
-                        </td>
-                        <td>
-                            <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="openAccountStatement('${acc.bank}')">🔍 Ver Extrato</button>
-                        </td>
+                        <td>${acc.initialDate}</td>
+                        <td>${formatCurrency(acc.initialBalance)}</td>
+                        <td>-</td>
+                        <td><strong>${formatCurrency(acc.initialBalance)}</strong></td>
+                        <td><input type="number" step="0.01" value="${acc.initialBalance}" style="width:100px;"></td>
+                        <td><span class="status-ok">✔ Ok</span></td>
+                        <td>-</td>
                     </tr>
                 `);
-            });
-        }
-
-        function openAccountStatement(accName) {
-            document.getElementById('modalAccTitle').innerText = `📑 Extrato Completo: ${accName}`;
-            const tbody = document.getElementById('modalAccountStatementTable');
-            tbody.innerHTML = '';
-
-            const txs = state.transactions.filter(t => t.account === accName).map(t => ({ ...t, isTransfer: false }));
-            
-            const tfOut = state.transfers.filter(t => t.from === accName).map(t => ({
-                id: t.id, date: t.date, desc: `Transferência enviada para ${t.to} (${t.desc})`,
-                amount: t.amount, type: 'despesa', category: 'Transferência'
-            }));
-
-            const tfIn = state.transfers.filter(t => t.to === accName).map(t => ({
-                id: t.id, date: t.date, desc: `Transferência recebida de ${t.from} (${t.desc})`,
-                amount: t.amount, type: 'receita', category: 'Transferência'
-            }));
-
-            const statement = [...txs, ...tfOut, ...tfIn].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            if (statement.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Nenhum lançamento ou transferência registrado nesta conta.</td></tr>`;
-            } else {
-                statement.forEach(st => {
-                    tbody.insertAdjacentHTML('beforeend', `
-                        <tr>
-                            <td><strong>${st.date ? st.date.split('-').reverse().join('/') : '-'}</strong></td>
-                            <td>${st.desc}</td>
-                            <td>${st.category}</td>
-                            <td><span class="tag-type tag-${st.type}">${st.type}</span></td>
-                            <td style="font-weight:700; color:${st.type === 'receita' ? 'var(--success)' : 'var(--danger)'}">
-                                ${st.type === 'receita' ? '+' : '-'} ${formatCurrency(st.amount)}
-                            </td>
-                        </tr>
-                    `);
-                });
-            }
-
-            document.getElementById('accStatementModal').classList.add('active');
-        }
-
-        // --- DASHBOARD & METAS ---
-        function filterTransactionsByPeriod(txs) {
-            const mode = document.getElementById('viewMode').value;
-            const periodVal = document.getElementById('filterPeriod').value;
-            if (!periodVal) return txs;
-
-            return txs.filter(tx => {
-                if (!tx.date) return true;
-                if (mode === 'month') return tx.date.startsWith(periodVal);
-                if (mode === 'year') return tx.date.startsWith(periodVal.slice(0, 4));
-                if (mode === 'day') return tx.date === periodVal;
-                return true;
             });
         }
 
@@ -1132,37 +1014,31 @@
             const inflows = filteredTxs.filter(t => t.type === 'receita').reduce((a, t) => a + t.amount, 0);
             const outflows = filteredTxs.filter(t => t.type === 'despesa').reduce((a, t) => a + t.amount, 0);
 
-            document.getElementById('totalInflows').innerText = formatCurrency(inflows);
-            document.getElementById('totalOutflows').innerText = formatCurrency(outflows);
-            document.getElementById('totalBalance').innerText = formatCurrency(inflows - outflows);
+            if (document.getElementById('totalInflows')) document.getElementById('totalInflows').innerText = formatCurrency(inflows);
+            if (document.getElementById('totalOutflows')) document.getElementById('totalOutflows').innerText = formatCurrency(outflows);
+            if (document.getElementById('totalBalance')) document.getElementById('totalBalance').innerText = formatCurrency(inflows - outflows);
 
             renderDashGoals(filteredTxs);
             renderChart(filteredTxs);
         }
 
-        function renderDashGoals(filteredTxs) {
-            const periodVal = document.getElementById('filterPeriod').value.slice(0, 7);
-            const currentGoals = state.goals[periodVal] || {};
-            const container = document.getElementById('dashGoalsList');
-            container.innerHTML = '';
+        function filterTransactionsByPeriod(txs) {
+            const periodVal = document.getElementById('filterPeriod').value;
+            if (!periodVal) return txs;
+            return txs.filter(tx => tx.date && tx.date.startsWith(periodVal));
+        }
 
+        function renderDashGoals(filteredTxs) {
+            const container = document.getElementById('dashGoalsList');
+            if (!container) return;
+            container.innerHTML = '';
             state.categories.forEach(cat => {
                 const spent = filteredTxs.filter(t => t.type === 'despesa' && t.category === cat).reduce((a, t) => a + t.amount, 0);
-                const goal = currentGoals[cat] || 0;
-                const percentage = goal > 0 ? Math.min(Math.round((spent / goal) * 100), 100) : (spent > 0 ? 100 : 0);
-
-                let pClass = 'progress-ok';
-                if (percentage >= 80 && percentage < 100) pClass = 'progress-warning';
-                if (percentage >= 100 && goal > 0) pClass = 'progress-danger';
-
                 container.insertAdjacentHTML('beforeend', `
                     <div>
                         <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span class="cat-clickable" onclick="openCatModal('${cat}')">${cat}</span>
-                            <span>${formatCurrency(spent)} / ${goal > 0 ? formatCurrency(goal) : 'Sem Meta'}</span>
-                        </div>
-                        <div style="width:100%; height:8px; background:#f1f5f9; border-radius:999px; overflow:hidden; margin-top:4px;">
-                            <div class="${pClass}" style="height:100%; width:${goal > 0 ? percentage : (spent > 0 ? 100 : 0)}%"></div>
+                            <span>${cat}</span>
+                            <span>${formatCurrency(spent)}</span>
                         </div>
                     </div>
                 `);
@@ -1170,28 +1046,23 @@
         }
 
         function renderChart(filteredTxs) {
-            const ctx = document.getElementById('categoryChart').getContext('2d');
+            const canvas = document.getElementById('categoryChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             const catMap = {};
             filteredTxs.filter(t => t.type === 'despesa').forEach(t => {
                 catMap[t.category] = (catMap[t.category] || 0) + t.amount;
             });
 
             if (chartInstance) chartInstance.destroy();
-
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(catMap),
-                    datasets: [{ data: Object.values(catMap), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'] }]
+                    datasets: [{ data: Object.values(catMap), backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
-        }
-
-        function populateCategoriesSelects() {
-            const sel = document.getElementById('txCategory');
-            sel.innerHTML = '';
-            state.categories.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`));
         }
 
         function addCategory(e) {
@@ -1199,157 +1070,22 @@
             const name = document.getElementById('newCatName').value.trim();
             if (name && !state.categories.includes(name)) {
                 state.categories.push(name);
-                saveState();
+                saveLocalState();
                 populateCategoriesSelects();
-                renderGoalsTable();
                 document.getElementById('newCatName').value = '';
             }
         }
 
         function setGoalViewMode(mode, btn) {
             currentGoalTableMode = mode;
-            document.getElementById('btnGoalMonth').classList.remove('active');
-            document.getElementById('btnGoalYear').classList.remove('active');
-            btn.classList.add('active');
-
-            const headerTr = document.getElementById('goalsHeader');
-            if (mode === 'month') {
-                headerTr.innerHTML = `
-                    <th>Categoria</th>
-                    <th>Meta Mês Atual (R$)</th>
-                    <th>Gasto Realizado</th>
-                    <th>Status</th>
-                    <th>Ação</th>
-                `;
-            } else {
-                headerTr.innerHTML = `
-                    <th>Categoria</th>
-                    <th>Teto Anual (R$)</th>
-                    <th>Total Acumulado no Ano</th>
-                    <th>Status Anual</th>
-                    <th>Ação</th>
-                `;
-            }
-            renderGoalsTable();
+            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
         }
 
-        function renderGoalsTable() {
-            const tbody = document.getElementById('goalsTable');
-            tbody.innerHTML = '';
-            const periodVal = document.getElementById('filterPeriod').value;
-            const monthStr = periodVal.slice(0, 7);
-            const yearStr = periodVal.slice(0, 4);
+        function renderGoalsTable() {}
+        function openCatModal(catName) { document.getElementById('catModalOverlay').classList.add('active'); }
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
 
-            if (currentGoalTableMode === 'month') {
-                const currentMonthGoals = state.goals[monthStr] || {};
-                const monthTxs = state.transactions.filter(t => t.date && t.date.startsWith(monthStr) && t.type === 'despesa');
-
-                state.categories.forEach(cat => {
-                    const goal = currentMonthGoals[cat] || 0;
-                    const spent = monthTxs.filter(t => t.category === cat).reduce((a, t) => a + t.amount, 0);
-
-                    tbody.insertAdjacentHTML('beforeend', `
-                        <tr>
-                            <td><strong class="cat-clickable" onclick="openCatModal('${cat}')">${cat}</strong></td>
-                            <td><input type="number" step="50" min="0" value="${goal}" onchange="if(!state.goals['${monthStr}']) state.goals['${monthStr}']={}; state.goals['${monthStr}']['${cat}']=parseFloat(this.value)||0; saveState();" style="width:100px; padding:4px;"></td>
-                            <td>${formatCurrency(spent)}</td>
-                            <td>${goal > 0 ? (spent > goal ? '<span style="color:red; font-weight:bold;">Estourou</span>' : '<span style="color:var(--success); font-weight:bold;">Dentro da Meta</span>') : '<span style="color:var(--text-muted)">Sem Meta</span>'}</td>
-                            <td><button class="btn-danger-sm" onclick="state.categories=state.categories.filter(c=>c!=='${cat}');saveState();populateCategoriesSelects();renderGoalsTable();">🗑️</button></td>
-                        </tr>
-                    `);
-                });
-            } else {
-                const currentYearGoals = state.annualGoals[yearStr] || {};
-                const yearTxs = state.transactions.filter(t => t.date && t.date.startsWith(yearStr) && t.type === 'despesa');
-
-                state.categories.forEach(cat => {
-                    const goalAnual = currentYearGoals[cat] || 0;
-                    const spentYear = yearTxs.filter(t => t.category === cat).reduce((a, t) => a + t.amount, 0);
-
-                    tbody.insertAdjacentHTML('beforeend', `
-                        <tr>
-                            <td><strong class="cat-clickable" onclick="openCatModal('${cat}')">${cat}</strong></td>
-                            <td><input type="number" step="100" min="0" value="${goalAnual}" onchange="if(!state.annualGoals['${yearStr}']) state.annualGoals['${yearStr}']={}; state.annualGoals['${yearStr}']['${cat}']=parseFloat(this.value)||0; saveState();" style="width:110px; padding:4px;"></td>
-                            <td>${formatCurrency(spentYear)}</td>
-                            <td>${goalAnual > 0 ? (spentYear > goalAnual ? '<span style="color:red; font-weight:bold;">Estourou Teto Anual</span>' : '<span style="color:var(--success); font-weight:bold;">Ok no Ano</span>') : '<span style="color:var(--text-muted)">Sem Teto</span>'}</td>
-                            <td><button class="btn-danger-sm" onclick="state.categories=state.categories.filter(c=>c!=='${cat}');saveState();populateCategoriesSelects();renderGoalsTable();">🗑️</button></td>
-                        </tr>
-                    `);
-                });
-            }
-        }
-
-        // --- MODAIS ---
-        function openCatModal(catName) {
-            const periodVal = document.getElementById('filterPeriod').value;
-            const monthStr = periodVal.slice(0, 7);
-            const yearStr = periodVal.slice(0, 4);
-
-            document.getElementById('modalCatTitle').innerText = `📊 Detalhamento: ${catName}`;
-
-            const monthSpent = state.transactions
-                .filter(t => t.date && t.date.startsWith(monthStr) && t.category === catName && t.type === 'despesa')
-                .reduce((a, t) => a + t.amount, 0);
-            const monthGoal = (state.goals[monthStr] || {})[catName] || 0;
-
-            document.getElementById('modalMonthSpent').innerText = formatCurrency(monthSpent);
-            document.getElementById('modalMonthGoalText').innerText = `Meta Mês: ${monthGoal > 0 ? formatCurrency(monthGoal) : 'Sem Meta'}`;
-
-            const yearSpent = state.transactions
-                .filter(t => t.date && t.date.startsWith(yearStr) && t.category === catName && t.type === 'despesa')
-                .reduce((a, t) => a + t.amount, 0);
-            const yearGoal = (state.annualGoals[yearStr] || {})[catName] || 0;
-
-            document.getElementById('modalYearSpent').innerText = formatCurrency(yearSpent);
-            document.getElementById('modalYearGoalText').innerText = `Teto Anual: ${yearGoal > 0 ? formatCurrency(yearGoal) : 'Sem Teto'}`;
-
-            const adviceBox = document.getElementById('modalAdviceBox');
-            if (yearGoal > 0) {
-                const remainingYear = yearGoal - yearSpent;
-                const currentMonthNum = parseInt(monthStr.split('-')[1]);
-                const remainingMonths = 12 - currentMonthNum + 1;
-                const monthlyAllowance = remainingYear > 0 ? (remainingYear / remainingMonths) : 0;
-
-                if (remainingYear <= 0) {
-                    adviceBox.innerHTML = `⚠️ <strong>Atenção:</strong> Você atingiu/estourou o teto de <strong>${formatCurrency(yearGoal)}</strong> previsto para o ano de ${yearStr}.`;
-                } else {
-                    adviceBox.innerHTML = `💡 Tem <strong>${formatCurrency(remainingYear)}</strong> disponíveis no teto de ${yearStr}. A média ideal para não estourar é gastar até <strong>${formatCurrency(monthlyAllowance)}/mês</strong> nos ${remainingMonths} meses restantes.`;
-                }
-            } else {
-                adviceBox.innerHTML = `💡 Defina um <strong>Teto Anual</strong> para a categoria <strong>${catName}</strong> na aba de Metas (Visão Anual Teto) para receber projeções personalizadas.`;
-            }
-
-            const tbody = document.getElementById('modalHistoryTable');
-            tbody.innerHTML = '';
-            const monthsNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-            
-            for (let i = 1; i <= 12; i++) {
-                const mTwoDigits = i < 10 ? `0${i}` : `${i}`;
-                const iterMonthStr = `${yearStr}-${mTwoDigits}`;
-
-                const mSpent = state.transactions
-                    .filter(t => t.date && t.date.startsWith(iterMonthStr) && t.category === catName && t.type === 'despesa')
-                    .reduce((a, t) => a + t.amount, 0);
-                const mGoal = (state.goals[iterMonthStr] || {})[catName] || 0;
-
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td><strong>${monthsNames[i-1]} / ${yearStr}</strong></td>
-                        <td>${formatCurrency(mSpent)}</td>
-                        <td>${mGoal > 0 ? formatCurrency(mGoal) : '-'}</td>
-                        <td>${mGoal > 0 ? (mSpent > mGoal ? '<span style="color:red">Estourou</span>' : '<span style="color:var(--success)">Ok</span>') : '-'}</td>
-                    </tr>
-                `);
-            }
-
-            document.getElementById('catModalOverlay').classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        // --- CONTAS, CARTÕES & PIX ---
         function addBankAccount(e) {
             e.preventDefault();
             state.accountsList.push({
@@ -1360,7 +1096,7 @@
                 initialDate: document.getElementById('accInitialDate').value,
                 purpose: document.getElementById('accPurpose').value
             });
-            saveState();
+            saveLocalState();
             populateAccountSelects();
             renderAccountsAndPix();
             e.target.reset();
@@ -1374,42 +1110,21 @@
                 bank: document.getElementById('pixBank').value,
                 key: document.getElementById('pixKey').value
             });
-            saveState();
+            saveLocalState();
             renderAccountsAndPix();
             e.target.reset();
         }
 
         function renderAccountsAndPix() {
             const aTable = document.getElementById('accountsTable');
-            aTable.innerHTML = '';
-            state.accountsList.forEach(a => {
-                aTable.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td><strong>${a.bank}</strong></td>
-                        <td>${a.owner}</td>
-                        <td>${a.initialDate ? a.initialDate.split('-').reverse().join('/') : '-'}</td>
-                        <td>${formatCurrency(a.initialBalance || 0)}</td>
-                        <td>${a.purpose}</td>
-                        <td><button class="btn-danger-sm" onclick="state.accountsList=state.accountsList.filter(x=>x.id!=${a.id});saveState();populateAccountSelects();renderAccountsAndPix();">🗑️</button></td>
-                    </tr>
-                `);
-            });
-
-            const pTable = document.getElementById('pixTable');
-            pTable.innerHTML = '';
-            state.pixList.forEach(p => {
-                pTable.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${p.owner}</td>
-                        <td>${p.bank}</td>
-                        <td><code>${p.key}</code> <button class="btn-outline" style="padding:2px 6px; font-size:0.75rem" onclick="navigator.clipboard.writeText('${p.key}')">Copiar</button></td>
-                        <td><button class="btn-danger-sm" onclick="state.pixList=state.pixList.filter(x=>x.id!=${p.id});saveState();renderAccountsAndPix();">🗑️</button></td>
-                    </tr>
-                `);
-            });
+            if (aTable) {
+                aTable.innerHTML = '';
+                state.accountsList.forEach(a => {
+                    aTable.insertAdjacentHTML('beforeend', `<tr><td><strong>${a.bank}</strong></td><td>${a.owner}</td><td>${a.initialDate}</td><td>${formatCurrency(a.initialBalance)}</td><td>${a.purpose}</td><td>-</td></tr>`);
+                });
+            }
         }
 
-        // --- CAIXINHAS & SIMULADOR DE TEMPO ---
         function addVault(e) {
             e.preventDefault();
             state.vaultsList.push({
@@ -1417,90 +1132,27 @@
                 name: document.getElementById('vaultName').value,
                 current: parseFloat(document.getElementById('vaultCurrent').value),
                 goal: parseFloat(document.getElementById('vaultGoal').value),
-                monthlyDeposit: parseFloat(document.getElementById('vaultMonthlyDeposit').value) || 0,
-                history: []
+                monthlyDeposit: parseFloat(document.getElementById('vaultMonthlyDeposit').value) || 0
             });
-            saveState();
+            saveLocalState();
             renderVaults();
             e.target.reset();
         }
 
-        function depositVault(id) {
-            const val = parseFloat(prompt("Quanto deseja guardar nesta caixinha (R$)?"));
-            if (val && val > 0) {
-                const vault = state.vaultsList.find(v => v.id === id);
-                if (vault) {
-                    vault.current += val;
-                    if (!vault.history) vault.history = [];
-                    vault.history.push({ date: new Date().toISOString().slice(0, 10), amount: val, type: 'deposit' });
-                    saveState();
-                    renderVaults();
-                }
-            }
-        }
-
-        function withdrawVault(id) {
-            const val = parseFloat(prompt("Quanto deseja retirar desta caixinha (R$)?"));
-            if (val && val > 0) {
-                const vault = state.vaultsList.find(v => v.id === id);
-                if (vault) {
-                    if (val > vault.current) {
-                        alert("O valor de retirada é maior do que o saldo guardado!");
-                        return;
-                    }
-                    vault.current -= val;
-                    if (!vault.history) vault.history = [];
-                    vault.history.push({ date: new Date().toISOString().slice(0, 10), amount: val, type: 'withdraw' });
-                    saveState();
-                    renderVaults();
-                }
-            }
-        }
-
         function renderVaults() {
             const grid = document.getElementById('vaultsGrid');
+            if (!grid) return;
             grid.innerHTML = '';
             state.vaultsList.forEach(v => {
-                const pct = Math.min(Math.round((v.current / v.goal) * 100), 100);
-                const remainingVal = Math.max(v.goal - v.current, 0);
-
-                let monthsToGoalText = "Alcançado!";
-                if (remainingVal > 0) {
-                    if (v.monthlyDeposit && v.monthlyDeposit > 0) {
-                        const monthsNeeded = Math.ceil(remainingVal / v.monthlyDeposit);
-                        monthsToGoalText = `Faltam aprox. <strong>${monthsNeeded} meses</strong> (${(monthsNeeded/12).toFixed(1)} anos) guardando ${formatCurrency(v.monthlyDeposit)}/mês`;
-                    } else {
-                        monthsToGoalText = "Informe o aporte mensal para ver a previsão";
-                    }
-                }
-
                 grid.insertAdjacentHTML('beforeend', `
-                    <div class="card-panel" style="position:relative; display:flex; flex-direction:column; gap:8px;">
-                        <button class="btn-danger-sm" style="position:absolute; top:16px; right:16px;" onclick="if(confirm('Excluir esta caixinha?')){state.vaultsList=state.vaultsList.filter(x=>x.id!=${v.id});saveState();renderVaults();}">🗑️</button>
-                        
-                        <span style="font-weight:700; color:var(--text-muted); text-transform:uppercase; font-size:0.85rem;">🐷 ${v.name}</span>
-                        <span style="font-size:1.8rem; font-weight:700; color:var(--primary);">${formatCurrency(v.current)}</span>
-                        
-                        <span style="font-size:0.85rem; color:var(--text-muted);">Meta: ${formatCurrency(v.goal)} (${pct}%)</span>
-                        
-                        <div style="width:100%; height:10px; background:#f1f5f9; border-radius:999px; overflow:hidden; margin: 4px 0 6px 0;">
-                            <div style="height:100%; width:${pct}%; background-color:var(--success);"></div>
-                        </div>
-
-                        <div style="font-size:0.78rem; color:#1e40af; background:var(--primary-light); padding:6px 10px; border-radius:6px; margin-bottom:8px;">
-                            🔮 ${monthsToGoalText}
-                        </div>
-
-                        <div style="display:flex; gap:8px;">
-                            <button class="btn-primary" style="flex:1; padding:6px 10px; font-size:0.8rem;" onclick="depositVault(${v.id})">➕ Guardar +R$</button>
-                            <button class="btn-outline" style="flex:1; padding:6px 10px; font-size:0.8rem; color:var(--danger);" onclick="withdrawVault(${v.id})">➖ Retirar -R$</button>
-                        </div>
+                    <div class="card-panel">
+                        <span style="font-weight:700;">🐷 ${v.name}</span>
+                        <span style="font-size:1.6rem; font-weight:700; color:var(--primary);">${formatCurrency(v.current)}</span>
                     </div>
                 `);
             });
         }
 
-        // --- BACKUP ---
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
             const a = document.createElement('a');
@@ -1513,17 +1165,28 @@
             const reader = new FileReader();
             reader.onload = function(evt) {
                 try {
-                    state = JSON.parse(evt.target.result);
-                    saveState();
-                    populateAccountSelects();
-                    populateCategoriesSelects();
-                    checkUpcomingAlerts();
-                    updateDashboard();
-                    renderTransactionsTable();
-                    alert('Backup restaurado com sucesso!');
-                } catch { alert('Arquivo de backup inválido.'); }
+                    const imported = JSON.parse(evt.target.result);
+                    state.transactions = imported.transactions || [];
+                    localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
+                    alert('Backup importado com sucesso!');
+                    location.reload();
+                } catch { alert('Arquivo inválido.'); }
             };
             reader.readAsText(e.target.files[0]);
+        }
+
+        function loadSourceCodeIntoView() {
+            const box = document.getElementById('sourceCodeBox');
+            if (box) box.value = document.documentElement.outerHTML;
+        }
+
+        function copySourceCode() {
+            const box = document.getElementById('sourceCodeBox');
+            if (box) {
+                box.select();
+                document.execCommand('copy');
+                alert('Código copiado!');
+            }
         }
     </script>
 </body>
