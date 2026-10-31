@@ -478,4 +478,702 @@
                     <div class="form-grid">
                         <input type="text" id="accBank" placeholder="Nome do Banco" required>
                         <input type="text" id="accOwner" placeholder="Titular" required>
-                        <input type="number" id="
+                        <input type="number" id="accInitialBalance" step="0.01" placeholder="Saldo Inicial (R$)" required>
+                        <input type="date" id="accInitialDate" required>
+                        <input type="text" id="accPurpose" placeholder="Finalidade" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Salvar Conta</button>
+                </form>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Banco/Conta</th><th>Titular</th><th>Data Inicial</th><th>Saldo Inicial</th><th>Finalidade</th><th>Ação</th></tr></thead>
+                        <tbody id="accountsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-panel">
+                <h2>Chaves Pix Cadastradas</h2>
+                <form onsubmit="addPix(event)" style="margin-bottom: 16px;">
+                    <div class="form-grid">
+                        <input type="text" id="pixOwner" placeholder="Titular" required>
+                        <input type="text" id="pixBank" placeholder="Banco" required>
+                        <input type="text" id="pixKey" placeholder="Chave Pix" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Adicionar Pix</button>
+                </form>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Titular</th><th>Banco</th><th>Chave</th><th>Ação</th></tr></thead>
+                        <tbody id="pixTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 10: CAIXINHAS & OBJETIVOS -->
+        <section id="view-vaults" class="view-section">
+            <div class="card-panel">
+                <h2>Suas Caixinhas & Objetivos</h2>
+                <form onsubmit="addVault(event)" style="margin-bottom: 20px;">
+                    <div class="form-grid">
+                        <input type="text" id="vaultName" placeholder="Nome da Caixinha" required>
+                        <input type="number" id="vaultCurrent" step="0.01" placeholder="Guardado Atual (R$)" required>
+                        <input type="number" id="vaultGoal" step="0.01" placeholder="Meta Final (R$)" required>
+                        <input type="number" id="vaultMonthlyDeposit" step="10" placeholder="Aporte Mensal (R$)" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Criar Caixinha</button>
+                </form>
+                <div id="vaultsGrid" class="metrics-grid"></div>
+            </div>
+        </section>
+
+        <!-- TELA 11: CONFIGURAÇÕES & CÓDIGO FONTE -->
+        <section id="view-settings" class="view-section">
+            <div class="card-panel">
+                <h2>⚙️ Gestão de Dados & Backup</h2>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="btn-primary" onclick="exportData()">📥 Exportar Backup (JSON)</button>
+                    <button class="btn-outline" onclick="document.getElementById('importFileSettings').click()">📤 Importar Backup</button>
+                    <input type="file" id="importFileSettings" style="display:none" onchange="importData(event)">
+                </div>
+            </div>
+
+            <div class="card-panel">
+                <h2>💻 Código Fonte do Site</h2>
+                <button class="btn-primary" onclick="copySourceCode()" style="margin-bottom: 12px;">📋 Copiar Código Fonte Completo</button>
+                <textarea id="sourceCodeBox" readonly class="code-box" onclick="this.select()"></textarea>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL 1: DETALHAMENTO DE CATEGORIA -->
+    <div id="catModalOverlay" class="modal-overlay">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="modalCatTitle" style="font-size: 1.3rem; color: var(--primary);">Categoria</h2>
+                <button onclick="closeModal('catModalOverlay')" class="btn-outline" style="padding: 4px 10px;">✕ Fechar</button>
+            </div>
+            <div class="metrics-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="metric-card">
+                    <span class="title">Gasto Mês Atual</span>
+                    <span id="modalMonthSpent" class="amount outflows">R$ 0,00</span>
+                    <span id="modalMonthGoalText" style="font-size: 0.8rem; color: var(--text-muted);">Meta: R$ 0,00</span>
+                </div>
+                <div class="metric-card">
+                    <span class="title">Gasto Acumulado no Ano</span>
+                    <span id="modalYearSpent" class="amount outflows">R$ 0,00</span>
+                    <span id="modalYearGoalText" style="font-size: 0.8rem; color: var(--text-muted);">Teto Anual: R$ 0,00</span>
+                </div>
+            </div>
+            <div id="modalAdviceBox" style="background: var(--primary-light); border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; font-size: 0.85rem; color: #1e40af;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: EXTRATO COMPLETO -->
+    <div id="accStatementModal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="modalAccTitle" style="font-size: 1.3rem; color: var(--primary);">Extrato da Conta</h2>
+                <button onclick="closeModal('accStatementModal')" class="btn-outline" style="padding: 4px 10px;">✕ Fechar</button>
+            </div>
+            <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th></tr>
+                    </thead>
+                    <tbody id="modalAccountStatementTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO DO SUPABASE
+        // ==========================================
+        const SUPABASE_URL = 'https://ehxvnbdcwinnfqxstwxz.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_MUOFOFH-MazsELbh7J5zw_SJA80'; 
+        
+        let supabaseClient = null;
+        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        const DEFAULT_CATEGORIES = ["Mercado", "Moradia", "Lazer", "Transporte", "Saúde", "Reserva/Investimentos", "Salário", "Alimentação na rua", "Salários Lucas"];
+        
+        let state = {
+            transactions: [
+                {id: 1793402848629, desc: "Janta fora", amount: 30, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-30", status: "pago", recurrence: "unico"},
+                {id: 1793453932205, desc: "café da manhã", amount: 20, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-31", status: "pago", recurrence: "unico"},
+                {id: 1793463690363, desc: "Salario", amount: 11, type: "receita", account: "Banco do Brasil", category: "Salários Lucas", date: "2026-10-31", status: "pago", recurrence: "unico"}
+            ],
+            transfers: JSON.parse(localStorage.getItem('fin_transfers') || '[]'),
+            categories: JSON.parse(localStorage.getItem('fin_cats') || JSON.stringify(DEFAULT_CATEGORIES)),
+            fixedBills: JSON.parse(localStorage.getItem('fin_fixed_bills') || '[]'),
+            goals: JSON.parse(localStorage.getItem('fin_goals') || '{"2026-10":{"Mercado":1000,"Moradia":150,"Lazer":500,"Transporte":300,"Saúde":600,"Reserva/Investimentos":200,"Alimentação na rua":1000,"Salários Lucas":3000,"Salário Aléxia":3000}}'),
+            annualGoals: JSON.parse(localStorage.getItem('fin_annual_goals') || '{}'),
+            pixList: JSON.parse(localStorage.getItem('fin_pix') || '[{"id":1793399798757,"owner":"Lucas Manerich","bank":"Banco do Brasil","key":"05208500175"},{"id":1793399815033,"owner":"Lucas Manerich","bank":"Nubank","key":"61981662269"},{"id":1793399828534,"owner":"Alexia Renata","bank":"C6","key":"61985039373"}]'),
+            accountsList: JSON.parse(localStorage.getItem('fin_accs') || '[{"id":1,"bank":"Banco do Brasil","owner":"Lucas","initialBalance":50,"initialDate":"2026-10-30","purpose":"Gastos gerais"},{"id":2,"bank":"Nubank","owner":"Lucas","initialBalance":0.94,"initialDate":"2026-10-30","purpose":"Pouco usada"},{"id":3,"bank":"C6","owner":"Aléxia","initialBalance":13.21,"initialDate":"2026-10-30","purpose":"Gastos gerais"}]'),
+            creditCards: JSON.parse(localStorage.getItem('fin_cards') || '[{"id":101,"name":"C6 Black","owner":"Aléxia","limit":15000,"closingDay":15,"dueDay":22}]'),
+            bankReconciled: JSON.parse(localStorage.getItem('fin_rec') || '{}'),
+            vaultsList: JSON.parse(localStorage.getItem('fin_vaults') || '[{"id":1793402664086,"name":"Reserva de investimento","current":0,"goal":10000,"monthlyDeposit":200,"history":[]}]'),
+            hideValues: false
+        };
+
+        let currentTxTypeFilter = 'todos';
+        let currentGoalTableMode = 'month';
+        let chartInstance = null;
+        let projectionChartInstance = null;
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const now = new Date();
+            document.getElementById('filterPeriod').value = now.toISOString().slice(0, 7);
+            const todayStr = now.toISOString().slice(0, 10);
+            document.getElementById('txDate').value = todayStr;
+            document.getElementById('tfDate').value = todayStr;
+            document.getElementById('accInitialDate').value = todayStr;
+
+            // Busca os dados da nuvem do Supabase
+            if (supabaseClient) {
+                await fetchTransactionsFromSupabase();
+            } else {
+                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || JSON.stringify(state.transactions));
+            }
+
+            populateAccountSelects();
+            populateCategoriesSelects();
+            updateDashboard();
+            renderTransactionsTable();
+            renderFixedBillsTable();
+            loadSourceCodeIntoView();
+        });
+
+        // --- SUPABASE SYNC ---
+        async function fetchTransactionsFromSupabase() {
+            try {
+                const { data, error } = await supabaseClient.from('transactions').select('*');
+                if (!error && data && data.length > 0) {
+                    state.transactions = data;
+                }
+            } catch (err) {
+                console.error("Erro ao buscar do Supabase:", err);
+            }
+        }
+
+        async function saveTransactionToSupabase(tx) {
+            if (supabaseClient) {
+                await supabaseClient.from('transactions').upsert([tx]);
+            }
+            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
+        }
+
+        async function deleteTransactionFromSupabase(id) {
+            if (supabaseClient) {
+                await supabaseClient.from('transactions').delete().eq('id', id);
+            }
+            localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
+        }
+
+        function switchView(viewName, btnElement) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item button').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            if (btnElement) btnElement.classList.add('active');
+
+            if (viewName === 'dashboard') updateDashboard();
+            if (viewName === 'transactions') renderTransactionsTable();
+            if (viewName === 'fixedbills') renderFixedBillsTable();
+            if (viewName === 'cards') renderCreditCards();
+            if (viewName === 'projection') renderProjectionChart();
+            if (viewName === 'transfers') renderTransfersTable();
+            if (viewName === 'reconciliation') renderReconciliationTable();
+            if (viewName === 'goals') renderGoalsTable();
+            if (viewName === 'accounts') renderAccountsAndPix();
+            if (viewName === 'vaults') renderVaults();
+            if (viewName === 'settings') loadSourceCodeIntoView();
+        }
+
+        function togglePrivacy() {
+            state.hideValues = !state.hideValues;
+            document.getElementById('privacyIcon').innerText = state.hideValues ? '🙈' : '👁️';
+            document.getElementById('privacyText').innerText = state.hideValues ? 'Mostrar' : 'Ocultar';
+            updateDashboard();
+            renderTransactionsTable();
+        }
+
+        function formatCurrency(val) {
+            if (state.hideValues) return 'R$ ****';
+            return (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function saveLocalState() {
+            localStorage.setItem('fin_transfers', JSON.stringify(state.transfers));
+            localStorage.setItem('fin_cats', JSON.stringify(state.categories));
+            localStorage.setItem('fin_fixed_bills', JSON.stringify(state.fixedBills));
+            localStorage.setItem('fin_goals', JSON.stringify(state.goals));
+            localStorage.setItem('fin_annual_goals', JSON.stringify(state.annualGoals));
+            localStorage.setItem('fin_pix', JSON.stringify(state.pixList));
+            localStorage.setItem('fin_accs', JSON.stringify(state.accountsList));
+            localStorage.setItem('fin_cards', JSON.stringify(state.creditCards));
+            localStorage.setItem('fin_rec', JSON.stringify(state.bankReconciled));
+            localStorage.setItem('fin_vaults', JSON.stringify(state.vaultsList));
+        }
+
+        function populateAccountSelects() {
+            const txAcc = document.getElementById('txAccountSelect');
+            const tfFrom = document.getElementById('tfFrom');
+            const tfTo = document.getElementById('tfTo');
+            [txAcc, tfFrom, tfTo].forEach(select => {
+                if (!select) return;
+                select.innerHTML = '';
+                state.accountsList.forEach(a => {
+                    select.insertAdjacentHTML('beforeend', `<option value="${a.bank}">${a.bank} (${a.owner})</option>`);
+                });
+                if (select === txAcc) {
+                    state.creditCards.forEach(c => {
+                        select.insertAdjacentHTML('beforeend', `<option value="Cartão: ${c.name}">💳 Cartão: ${c.name}</option>`);
+                    });
+                }
+            });
+        }
+
+        function populateCategoriesSelects() {
+            const sel = document.getElementById('txCategory');
+            const fbSel = document.getElementById('fbCategory');
+            [sel, fbSel].forEach(select => {
+                if (!select) return;
+                select.innerHTML = '';
+                state.categories.forEach(c => select.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`));
+            });
+        }
+
+        function toggleParcelasInput(val) {
+            document.getElementById('parcelasGroup').style.display = (val === 'parcelado') ? 'flex' : 'none';
+        }
+
+        function setTxFilter(type, btn) {
+            currentTxTypeFilter = type;
+            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            renderTransactionsTable();
+        }
+
+        async function addTransaction(e) {
+            e.preventDefault();
+            const desc = document.getElementById('txDesc').value;
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const type = document.getElementById('txType').value;
+            const recurrence = document.getElementById('txRecurrence').value;
+            const account = document.getElementById('txAccountSelect').value;
+            const category = document.getElementById('txCategory').value;
+            const startDate = document.getElementById('txDate').value;
+            const status = document.getElementById('txStatus').value;
+
+            if (recurrence === 'parcelado') {
+                const installments = parseInt(document.getElementById('txInstallments').value) || 2;
+                const parcelAmount = amount / installments;
+                let dateObj = new Date(startDate + 'T00:00:00');
+
+                for (let i = 1; i <= installments; i++) {
+                    const iterDate = new Date(dateObj);
+                    iterDate.setMonth(dateObj.getMonth() + (i - 1));
+                    const newTx = {
+                        id: Date.now() + i,
+                        desc: `${desc} (${i}/${installments})`,
+                        amount: parcelAmount,
+                        type, account, category,
+                        date: iterDate.toISOString().slice(0, 10),
+                        status: i === 1 ? status : 'pendente',
+                        recurrence: 'parcelado'
+                    };
+                    state.transactions.push(newTx);
+                    await saveTransactionToSupabase(newTx);
+                }
+            } else {
+                const newTx = {
+                    id: Date.now(),
+                    desc, amount, type, account, category,
+                    date: startDate,
+                    status,
+                    recurrence
+                };
+                state.transactions.push(newTx);
+                await saveTransactionToSupabase(newTx);
+            }
+
+            document.getElementById('transactionForm').reset();
+            document.getElementById('txDate').value = new Date().toISOString().slice(0, 10);
+            renderTransactionsTable();
+            updateDashboard();
+            alert('Lançamento salvo e sincronizado na nuvem! ✨');
+        }
+
+        async function toggleStatusTx(id) {
+            const tx = state.transactions.find(t => t.id === id);
+            if (tx) {
+                tx.status = tx.status === 'pago' ? 'pendente' : 'pago';
+                await saveTransactionToSupabase(tx);
+                renderTransactionsTable();
+                updateDashboard();
+            }
+        }
+
+        async function deleteTx(id) {
+            state.transactions = state.transactions.filter(x => x.id !== id);
+            await deleteTransactionFromSupabase(id);
+            renderTransactionsTable();
+            updateDashboard();
+        }
+
+        function renderTransactionsTable() {
+            const tbody = document.getElementById('transactionsTable');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            let filtered = [...state.transactions];
+            if (currentTxTypeFilter === 'receita') filtered = filtered.filter(t => t.type === 'receita');
+            if (currentTxTypeFilter === 'despesa') filtered = filtered.filter(t => t.type === 'despesa');
+            if (currentTxTypeFilter === 'pendente') filtered = filtered.filter(t => t.status === 'pendente');
+
+            filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Nenhum lançamento encontrado.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(tx => {
+                const isPaid = tx.status === 'pago' || !tx.status;
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td>${tx.date ? tx.date.split('-').reverse().join('/') : '-'}</td>
+                        <td><strong>${tx.desc}</strong></td>
+                        <td>${tx.account || 'Geral'}</td>
+                        <td><span class="cat-clickable" onclick="openCatModal('${tx.category}')">${tx.category}</span></td>
+                        <td>
+                            <button onclick="toggleStatusTx(${tx.id})" class="${isPaid ? 'tag-status-pago' : 'tag-status-pendente'}" style="border:none; cursor:pointer;">
+                                ${isPaid ? '✔ Pago' : '⏳ Pendente'}
+                            </button>
+                        </td>
+                        <td style="font-weight:700; color: ${tx.type === 'receita' ? 'var(--success)' : 'var(--danger)'}">
+                            ${tx.type === 'receita' ? '+' : '-'} ${formatCurrency(tx.amount)}
+                        </td>
+                        <td><button class="btn-danger-sm" onclick="deleteTx(${tx.id})">🗑️</button></td>
+                    </tr>
+                `);
+            });
+        }
+
+        function addFixedBill(e) {
+            e.preventDefault();
+            state.fixedBills.push({
+                id: Date.now(),
+                desc: document.getElementById('fbDesc').value,
+                amount: parseFloat(document.getElementById('fbAmount').value),
+                day: parseInt(document.getElementById('fbDay').value),
+                category: document.getElementById('fbCategory').value
+            });
+            saveLocalState();
+            renderFixedBillsTable();
+            e.target.reset();
+        }
+
+        function renderFixedBillsTable() {
+            const tbody = document.getElementById('fixedBillsTable');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            state.fixedBills.forEach(fb => {
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td>Dia <strong>${fb.day}</strong></td>
+                        <td><strong>${fb.desc}</strong></td>
+                        <td>${fb.category}</td>
+                        <td>${formatCurrency(fb.amount)}</td>
+                        <td><button class="btn-danger-sm" onclick="state.fixedBills=state.fixedBills.filter(x=>x.id!=${fb.id});saveLocalState();renderFixedBillsTable();">🗑️</button></td>
+                    </tr>
+                `);
+            });
+        }
+
+        function addCreditCard(e) {
+            e.preventDefault();
+            state.creditCards.push({
+                id: Date.now(),
+                name: document.getElementById('cardName').value,
+                owner: document.getElementById('cardOwner').value,
+                limit: parseFloat(document.getElementById('cardLimit').value),
+                closingDay: parseInt(document.getElementById('cardClosingDay').value),
+                dueDay: parseInt(document.getElementById('cardDueDay').value)
+            });
+            saveLocalState();
+            populateAccountSelects();
+            renderCreditCards();
+            e.target.reset();
+        }
+
+        function renderCreditCards() {
+            const grid = document.getElementById('creditCardsGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            state.creditCards.forEach(c => {
+                grid.insertAdjacentHTML('beforeend', `
+                    <div class="card-panel" style="position:relative;">
+                        <button class="btn-danger-sm" style="position:absolute; top:16px; right:16px;" onclick="state.creditCards=state.creditCards.filter(x=>x.id!=${c.id});saveLocalState();renderCreditCards();">🗑️</button>
+                        <span style="font-weight:700; color:var(--text-muted);">💳 ${c.name} (${c.owner})</span>
+                        <span style="font-size:1.4rem; font-weight:700; color:var(--danger);">Limite: ${formatCurrency(c.limit)}</span>
+                    </div>
+                `);
+            });
+        }
+
+        function renderProjectionChart() {
+            const canvas = document.getElementById('projectionChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (projectionChartInstance) projectionChartInstance.destroy();
+            projectionChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mês 1', 'Mês 2', 'Mês 3', 'Mês 4', 'Mês 5', 'Mês 6'],
+                    datasets: [{ label: 'Saldo Projetado', data: [1000, 1200, 1500, 1800, 2000, 2500], backgroundColor: '#0284c7' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function addTransfer(e) {
+            e.preventDefault();
+            state.transfers.push({
+                id: Date.now(),
+                from: document.getElementById('tfFrom').value,
+                to: document.getElementById('tfTo').value,
+                amount: parseFloat(document.getElementById('tfAmount').value),
+                date: document.getElementById('tfDate').value,
+                desc: document.getElementById('tfDesc').value || 'Transferência'
+            });
+            saveLocalState();
+            renderTransfersTable();
+            e.target.reset();
+        }
+
+        function renderTransfersTable() {
+            const tbody = document.getElementById('transfersTable');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            state.transfers.forEach(tf => {
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td>${tf.date}</td>
+                        <td>${tf.from}</td>
+                        <td>${tf.to}</td>
+                        <td>${tf.desc}</td>
+                        <td>${formatCurrency(tf.amount)}</td>
+                        <td><button class="btn-danger-sm" onclick="state.transfers=state.transfers.filter(x=>x.id!=${tf.id});saveLocalState();renderTransfersTable();">🗑️</button></td>
+                    </tr>
+                `);
+            });
+        }
+
+        function renderReconciliationTable() {
+            const tbody = document.getElementById('reconciliationTable');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            state.accountsList.forEach(acc => {
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td><strong>${acc.bank}</strong></td>
+                        <td>${acc.initialDate}</td>
+                        <td>${formatCurrency(acc.initialBalance)}</td>
+                        <td>-</td>
+                        <td><strong>${formatCurrency(acc.initialBalance)}</strong></td>
+                        <td><input type="number" step="0.01" value="${acc.initialBalance}" style="width:100px;"></td>
+                        <td><span class="status-ok">✔ Ok</span></td>
+                        <td>-</td>
+                    </tr>
+                `);
+            });
+        }
+
+        function updateDashboard() {
+            const filteredTxs = filterTransactionsByPeriod(state.transactions);
+            const inflows = filteredTxs.filter(t => t.type === 'receita').reduce((a, t) => a + t.amount, 0);
+            const outflows = filteredTxs.filter(t => t.type === 'despesa').reduce((a, t) => a + t.amount, 0);
+
+            if (document.getElementById('totalInflows')) document.getElementById('totalInflows').innerText = formatCurrency(inflows);
+            if (document.getElementById('totalOutflows')) document.getElementById('totalOutflows').innerText = formatCurrency(outflows);
+            if (document.getElementById('totalBalance')) document.getElementById('totalBalance').innerText = formatCurrency(inflows - outflows);
+
+            renderDashGoals(filteredTxs);
+            renderChart(filteredTxs);
+        }
+
+        function filterTransactionsByPeriod(txs) {
+            const periodVal = document.getElementById('filterPeriod').value;
+            if (!periodVal) return txs;
+            return txs.filter(tx => tx.date && tx.date.startsWith(periodVal));
+        }
+
+        function renderDashGoals(filteredTxs) {
+            const container = document.getElementById('dashGoalsList');
+            if (!container) return;
+            container.innerHTML = '';
+            state.categories.forEach(cat => {
+                const spent = filteredTxs.filter(t => t.type === 'despesa' && t.category === cat).reduce((a, t) => a + t.amount, 0);
+                container.insertAdjacentHTML('beforeend', `
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
+                            <span>${cat}</span>
+                            <span>${formatCurrency(spent)}</span>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function renderChart(filteredTxs) {
+            const canvas = document.getElementById('categoryChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const catMap = {};
+            filteredTxs.filter(t => t.type === 'despesa').forEach(t => {
+                catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+            });
+
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(catMap),
+                    datasets: [{ data: Object.values(catMap), backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function addCategory(e) {
+            e.preventDefault();
+            const name = document.getElementById('newCatName').value.trim();
+            if (name && !state.categories.includes(name)) {
+                state.categories.push(name);
+                saveLocalState();
+                populateCategoriesSelects();
+                document.getElementById('newCatName').value = '';
+            }
+        }
+
+        function setGoalViewMode(mode, btn) {
+            currentGoalTableMode = mode;
+            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+        }
+
+        function renderGoalsTable() {}
+        function openCatModal(catName) { document.getElementById('catModalOverlay').classList.add('active'); }
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+
+        function addBankAccount(e) {
+            e.preventDefault();
+            state.accountsList.push({
+                id: Date.now(),
+                bank: document.getElementById('accBank').value,
+                owner: document.getElementById('accOwner').value,
+                initialBalance: parseFloat(document.getElementById('accInitialBalance').value) || 0,
+                initialDate: document.getElementById('accInitialDate').value,
+                purpose: document.getElementById('accPurpose').value
+            });
+            saveLocalState();
+            populateAccountSelects();
+            renderAccountsAndPix();
+            e.target.reset();
+        }
+
+        function addPix(e) {
+            e.preventDefault();
+            state.pixList.push({
+                id: Date.now(),
+                owner: document.getElementById('pixOwner').value,
+                bank: document.getElementById('pixBank').value,
+                key: document.getElementById('pixKey').value
+            });
+            saveLocalState();
+            renderAccountsAndPix();
+            e.target.reset();
+        }
+
+        function renderAccountsAndPix() {
+            const aTable = document.getElementById('accountsTable');
+            if (aTable) {
+                aTable.innerHTML = '';
+                state.accountsList.forEach(a => {
+                    aTable.insertAdjacentHTML('beforeend', `<tr><td><strong>${a.bank}</strong></td><td>${a.owner}</td><td>${a.initialDate}</td><td>${formatCurrency(a.initialBalance)}</td><td>${a.purpose}</td><td>-</td></tr>`);
+                });
+            }
+        }
+
+        function addVault(e) {
+            e.preventDefault();
+            state.vaultsList.push({
+                id: Date.now(),
+                name: document.getElementById('vaultName').value,
+                current: parseFloat(document.getElementById('vaultCurrent').value),
+                goal: parseFloat(document.getElementById('vaultGoal').value),
+                monthlyDeposit: parseFloat(document.getElementById('vaultMonthlyDeposit').value) || 0
+            });
+            saveLocalState();
+            renderVaults();
+            e.target.reset();
+        }
+
+        function renderVaults() {
+            const grid = document.getElementById('vaultsGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            state.vaultsList.forEach(v => {
+                grid.insertAdjacentHTML('beforeend', `
+                    <div class="card-panel">
+                        <span style="font-weight:700;">🐷 ${v.name}</span>
+                        <span style="font-size:1.6rem; font-weight:700; color:var(--primary);">${formatCurrency(v.current)}</span>
+                    </div>
+                `);
+            });
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = `backup_lisossomos_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+
+        function importData(e) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    state.transactions = imported.transactions || [];
+                    localStorage.setItem('fin_txs', JSON.stringify(state.transactions));
+                    alert('Backup importado com sucesso!');
+                    location.reload();
+                } catch { alert('Arquivo inválido.'); }
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        function loadSourceCodeIntoView() {
+            const box = document.getElementById('sourceCodeBox');
+            if (box) box.value = document.documentElement.outerHTML;
+        }
+
+        function copySourceCode() {
+            const box = document.getElementById('sourceCodeBox');
+            if (box) {
+                box.select();
+                document.execCommand('copy');
+                alert('Código copiado!');
+            }
+        }
+    </script>
+</body>
+</html>
