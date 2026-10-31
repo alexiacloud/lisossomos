@@ -598,7 +598,7 @@
 
     <script>
         // ==========================================
-        // CONFIGURAÇÃO DO SUPABASE (COLE AQUI AS TUA CHAVES)
+        // CONFIGURAÇÃO DO SUPABASE (COLE AQUI AS TUAS CHAVES)
         // ==========================================
         const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Ex: 'https://xxxxxx.supabase.co'
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Chave anon/public
@@ -611,17 +611,21 @@
         const DEFAULT_CATEGORIES = ["Mercado", "Moradia", "Lazer", "Transporte", "Saúde", "Reserva/Investimentos", "Salário", "Alimentação na rua", "Salários Lucas"];
         
         let state = {
-            transactions: [],
+            transactions: [
+                {id: 1793402848629, desc: "Janta fora", amount: 30, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-30", status: "pago", recurrence: "unico"},
+                {id: 1793453932205, desc: "café da manhã", amount: 20, type: "despesa", account: "Banco do Brasil", category: "Alimentação na rua", date: "2026-10-31", status: "pago", recurrence: "unico"},
+                {id: 1793463690363, desc: "Salario", amount: 11, type: "receita", account: "Banco do Brasil", category: "Salários Lucas", date: "2026-10-31", status: "pago", recurrence: "unico"}
+            ],
             transfers: JSON.parse(localStorage.getItem('fin_transfers') || '[]'),
             categories: JSON.parse(localStorage.getItem('fin_cats') || JSON.stringify(DEFAULT_CATEGORIES)),
             fixedBills: JSON.parse(localStorage.getItem('fin_fixed_bills') || '[]'),
-            goals: JSON.parse(localStorage.getItem('fin_goals') || '{}'),
+            goals: JSON.parse(localStorage.getItem('fin_goals') || '{"2026-10":{"Mercado":1000,"Moradia":150,"Lazer":500,"Transporte":300,"Saúde":600,"Reserva/Investimentos":200,"Alimentação na rua":1000,"Salários Lucas":3000,"Salário Aléxia":3000}}'),
             annualGoals: JSON.parse(localStorage.getItem('fin_annual_goals') || '{}'),
-            pixList: JSON.parse(localStorage.getItem('fin_pix') || '[]'),
-            accountsList: JSON.parse(localStorage.getItem('fin_accs') || '[{"id":1,"bank":"Nubank","owner":"Aléxia","initialBalance":1000,"initialDate":"2026-10-01","purpose":"Principal"}]'),
-            creditCards: JSON.parse(localStorage.getItem('fin_cards') || '[]'),
+            pixList: JSON.parse(localStorage.getItem('fin_pix') || '[{"id":1793399798757,"owner":"Lucas Manerich","bank":"Banco do Brasil","key":"05208500175"},{"id":1793399815033,"owner":"Lucas Manerich","bank":"Nubank","key":"61981662269"},{"id":1793399828534,"owner":"Alexia Renata","bank":"C6","key":"61985039373"}]'),
+            accountsList: JSON.parse(localStorage.getItem('fin_accs') || '[{"id":1,"bank":"Banco do Brasil","owner":"Lucas","initialBalance":50,"initialDate":"2026-10-30","purpose":"Gastos gerais"},{"id":2,"bank":"Nubank","owner":"Lucas","initialBalance":0.94,"initialDate":"2026-10-30","purpose":"Pouco usada"},{"id":3,"bank":"C6","owner":"Aléxia","initialBalance":13.21,"initialDate":"2026-10-30","purpose":"Gastos gerais"}]'),
+            creditCards: JSON.parse(localStorage.getItem('fin_cards') || '[{"id":101,"name":"C6 Black","owner":"Aléxia","limit":15000,"closingDay":15,"dueDay":22}]'),
             bankReconciled: JSON.parse(localStorage.getItem('fin_rec') || '{}'),
-            vaultsList: JSON.parse(localStorage.getItem('fin_vaults') || '[]'),
+            vaultsList: JSON.parse(localStorage.getItem('fin_vaults') || '[{"id":1793402664086,"name":"Reserva de investimento","current":0,"goal":10000,"monthlyDeposit":200,"history":[]}]'),
             hideValues: false
         };
 
@@ -642,7 +646,7 @@
             if (supabaseClient) {
                 await fetchTransactionsFromSupabase();
             } else {
-                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || '[]');
+                state.transactions = JSON.parse(localStorage.getItem('fin_txs') || JSON.stringify(state.transactions));
             }
 
             populateAccountSelects();
@@ -657,8 +661,13 @@
         async function fetchTransactionsFromSupabase() {
             try {
                 const { data, error } = await supabaseClient.from('transactions').select('*');
-                if (!error && data) {
+                if (!error && data && data.length > 0) {
                     state.transactions = data;
+                } else if (data && data.length === 0 && state.transactions.length > 0) {
+                    // Se o banco estiver vazio, envia os dados iniciais do esposo para a nuvem
+                    for (const tx of state.transactions) {
+                        await saveTransactionToSupabase(tx);
+                    }
                 }
             } catch (err) {
                 console.error("Erro ao buscar do Supabase:", err);
@@ -1134,7 +1143,6 @@
             const grid = document.getElementById('vaultsGrid');
             if (!grid) return;
             grid.innerHTML = '';
-            state.vaultsList.push({ ... }); // mantido
             state.vaultsList.forEach(v => {
                 grid.insertAdjacentHTML('beforeend', `
                     <div class="card-panel">
