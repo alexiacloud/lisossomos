@@ -598,10 +598,10 @@
 
     <script>
         // ==========================================
-        // CONFIGURAÇÃO DO SUPABASE (COLE AQUI AS TUAS CHAVES)
+        // CONFIGURAÇÃO DO SUPABASE
         // ==========================================
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Ex: 'https://xxxxxx.supabase.co'
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Chave anon/public
+        const SUPABASE_URL = 'https://ehxvnbdcwinnfqxstwxz.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_MUOFOFH-MazsELbh7J5zw_SJA80'; 
         
         let supabaseClient = null;
         if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase) {
@@ -664,7 +664,7 @@
                 if (!error && data && data.length > 0) {
                     state.transactions = data;
                 } else if (data && data.length === 0 && state.transactions.length > 0) {
-                    // Se o banco estiver vazio, envia os dados iniciais do esposo para a nuvem
+                    // Se o banco estiver vazio, envia os dados iniciais para a nuvem
                     for (const tx of state.transactions) {
                         await saveTransactionToSupabase(tx);
                     }
