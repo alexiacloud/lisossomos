@@ -1,4 +1,5 @@
-<html lang="pt-BR"><head>
+<html lang="pt-BR">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lisossomos 🧬 - Gestão Financeira Inteligente (Sincronizado)</title>
@@ -96,9 +97,6 @@
         th, td { padding: 12px; border-bottom: 1px solid var(--border); }
         th { color: var(--text-muted); font-weight: 600; background-color: #fafafa; }
 
-        .tag-type { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-        .tag-receita { background-color: var(--success-light); color: var(--success); }
-        .tag-despesa { background-color: var(--danger-light); color: var(--danger); }
         .tag-status-pago { background-color: var(--success-light); color: var(--success); font-size:0.75rem; padding: 2px 6px; border-radius:4px; font-weight:700;}
         .tag-status-pendente { background-color: var(--warning-light); color: var(--warning); font-size:0.75rem; padding: 2px 6px; border-radius:4px; font-weight:700;}
 
@@ -114,12 +112,6 @@
         .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
         .btn-danger-sm { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; }
         .btn-outline { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-
-        .progress-ok { background-color: var(--success); }
-        .progress-warning { background-color: var(--warning); }
-        .progress-danger { background-color: var(--danger); }
-        .status-ok { color: var(--success); font-weight: 700; }
-        .status-diff { color: var(--danger); font-weight: 700; }
 
         .cat-clickable { color: var(--primary); cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
         .cat-clickable:hover { color: #02699d; }
@@ -147,9 +139,9 @@
                 <span>Lisossomos</span>
             </div>
             <ul class="nav-menu">
-                <li class="nav-item"><button class="" onclick="switchView('dashboard', this)">📊 Dashboard</button></li>
-                <li class="nav-item"><button onclick="switchView('transactions', this)" class="">💸 Lançamentos</button></li>
-                <li class="nav-item"><button onclick="switchView('fixedbills', this)" class="">🔔 Contas Fixas</button></li>
+                <li class="nav-item"><button class="active" onclick="switchView('dashboard', this)">📊 Dashboard</button></li>
+                <li class="nav-item"><button onclick="switchView('transactions', this)">💸 Lançamentos</button></li>
+                <li class="nav-item"><button onclick="switchView('fixedbills', this)">🔔 Contas Fixas</button></li>
                 <li class="nav-item"><button onclick="switchView('cards', this)">💳 Cartões de Crédito</button></li>
                 <li class="nav-item"><button onclick="switchView('projection', this)">📈 Projeção 6 Meses</button></li>
                 <li class="nav-item"><button onclick="switchView('transfers', this)">🔄 Transferências</button></li>
@@ -157,7 +149,7 @@
                 <li class="nav-item"><button onclick="switchView('goals', this)">🎯 Metas por Categoria</button></li>
                 <li class="nav-item"><button onclick="switchView('accounts', this)">🏦 Contas &amp; Chaves Pix</button></li>
                 <li class="nav-item"><button onclick="switchView('vaults', this)">🐷 Caixinhas &amp; Objetivos</button></li>
-                <li class="nav-item"><button onclick="switchView('settings', this)" class="active">⚙️ Configurações &amp; Código</button></li>
+                <li class="nav-item"><button onclick="switchView('settings', this)">⚙️ Configurações &amp; Código</button></li>
             </ul>
         </div>
 
@@ -189,94 +181,31 @@
         </div>
 
         <!-- TELA 1: DASHBOARD -->
-        <section id="view-dashboard" class="view-section">
+        <section id="view-dashboard" class="view-section active">
             <div class="metrics-grid">
                 <div class="metric-card">
                     <span class="title">Entradas (Receitas)</span>
-                    <span class="amount inflows" id="totalInflows">R$&nbsp;0,00</span>
+                    <span class="amount inflows" id="totalInflows">R$ 0,00</span>
                 </div>
                 <div class="metric-card">
                     <span class="title">Saídas (Despesas)</span>
-                    <span class="amount outflows" id="totalOutflows">R$&nbsp;0,00</span>
+                    <span class="amount outflows" id="totalOutflows">R$ 0,00</span>
                 </div>
                 <div class="metric-card">
                     <span class="title">Saldo Líquido</span>
-                    <span class="amount balance" id="totalBalance">R$&nbsp;0,00</span>
+                    <span class="amount balance" id="totalBalance">R$ 0,00</span>
                 </div>
             </div>
 
             <div class="dashboard-columns">
                 <div class="card-panel">
                     <h2>Metas de Gastos por Categoria</h2>
-                    <div id="dashGoalsList" style="display: flex; flex-direction: column; gap: 14px;">
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Mercado</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Moradia</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Lazer</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Transporte</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Saúde</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Reserva/Investimentos</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Salário</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Alimentação na rua</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
-                            <span>Salários Lucas</span>
-                            <span>R$&nbsp;0,00</span>
-                        </div>
-                    </div>
-                </div>
+                    <div id="dashGoalsList" style="display: flex; flex-direction: column; gap: 14px;"></div>
                 </div>
                 <div class="card-panel">
                     <h2>Distribuição de Despesas</h2>
                     <div style="position: relative; height: 280px; width: 100%;">
-                        <canvas id="categoryChart" height="0" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" width="0"></canvas>
+                        <canvas id="categoryChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -290,15 +219,15 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Descrição</label>
-                            <input type="text" id="txDesc" placeholder="Ex: Supermercado, Salário..." required="">
+                            <input type="text" id="txDesc" placeholder="Ex: Supermercado, Salário..." required>
                         </div>
                         <div class="form-group">
                             <label>Valor (R$)</label>
-                            <input type="number" id="txAmount" step="0.01" min="0.01" placeholder="0,00" required="">
+                            <input type="number" id="txAmount" step="0.01" min="0.01" placeholder="0,00" required>
                         </div>
                         <div class="form-group">
                             <label>Tipo</label>
-                            <select id="txType" required="">
+                            <select id="txType" required>
                                 <option value="despesa">Despesa (-)</option>
                                 <option value="receita">Receita (+)</option>
                             </select>
@@ -317,15 +246,15 @@
                         </div>
                         <div class="form-group">
                             <label>Conta / Cartão</label>
-                            <select id="txAccountSelect" required=""><option value="Banco do Brasil">Banco do Brasil (Lucas)</option><option value="Nubank">Nubank (Lucas)</option><option value="C6">C6 (Aléxia)</option><option value="Cartão: C6 Black">💳 Cartão: C6 Black</option></select>
+                            <select id="txAccountSelect" required></select>
                         </div>
                         <div class="form-group">
                             <label>Categoria</label>
-                            <select id="txCategory" required=""><option value="Mercado">Mercado</option><option value="Moradia">Moradia</option><option value="Lazer">Lazer</option><option value="Transporte">Transporte</option><option value="Saúde">Saúde</option><option value="Reserva/Investimentos">Reserva/Investimentos</option><option value="Salário">Salário</option><option value="Alimentação na rua">Alimentação na rua</option><option value="Salários Lucas">Salários Lucas</option></select>
+                            <select id="txCategory" required></select>
                         </div>
                         <div class="form-group">
                             <label>Data Vencimento/Realização</label>
-                            <input type="date" id="txDate" required="">
+                            <input type="date" id="txDate" required>
                         </div>
                         <div class="form-group">
                             <label>Status</label>
@@ -362,11 +291,40 @@
                                 <th>Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="transactionsTable">
-                    <tr>
-                        <td>31/10/2026</td>
-                        <td><strong>café da manhã</strong></td>
-                        <td>Banco do Brasil</td>
-                        <td><span class="cat-clickable" onclick="openCatModal('Alimentação na rua')">Alimentação na rua</span></td>
-                        <td>
-                            <button onclick="toggleStatusTx(1793453932205)" class="tag-status-pago" style="border:none; cursor:pointer;">
+                        <tbody id="transactionsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 3: CONTAS FIXAS -->
+        <section id="view-fixedbills" class="view-section">
+            <div class="card-panel">
+                <h2>Cadastrar Conta Fixa / Recorrente</h2>
+                <form onsubmit="addFixedBill(event)" style="margin-bottom: 16px;">
+                    <div class="form-grid">
+                        <input type="text" id="fbDesc" placeholder="Descrição (ex: Aluguel)" required>
+                        <input type="number" id="fbAmount" step="0.01" placeholder="Valor Estimado (R$)" required>
+                        <input type="number" id="fbDay" min="1" max="31" placeholder="Dia Vencimento" required>
+                        <select id="fbCategory" required></select>
+                    </div>
+                    <button type="submit" class="btn-primary">Salvar Conta Fixa</button>
+                </form>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Dia</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead>
+                        <tbody id="fixedBillsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 4: CARTÕES DE CRÉDITO -->
+        <section id="view-cards" class="view-section">
+            <div class="card-panel">
+                <h2>Cadastrar Cartão de Crédito</h2>
+                <form onsubmit="addCreditCard(event)" style="margin-bottom: 16px;">
+                    <div class="form-grid">
+                        <input type="text" id="cardName" placeholder="Nome do Cartão" required>
+                        <input type="text" id="cardOwner" placeholder="Titular" required>
+                        <input type="number" id="cardLimit" step="100" placeholder="Limite
